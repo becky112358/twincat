@@ -1,16 +1,17 @@
 [package]
-name = "twincat"
+name = "twincat_derive"
 version = "0.1.0"
 edition = "2021"
-description = "TwinCAT ADS tools"
+description = "TwinCAT ADS macro derivations"
 keywords = ["Beckhoff", "TwinCAT", "ADS", "Structured-Text"]
 license = "MIT"
 readme = "readme.md"
 repository = "https://github.com/becky112358/twincat"
 
-[build-dependencies]
-bindgen = "0.70.1"
+[lib]
+proc-macro = true
 
 [dependencies]
-twincat_derive = { path = "../twincat_derive", version = "0.1.0" }
-zerocopy = "0.7.35"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0"

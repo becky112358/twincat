@@ -6,3 +6,6 @@ description = "TwinCAT ADS example usage"
 
 [dependencies]
 twincat = { path = "../twincat" }
+
+[dev-dependencies]
+serial_test = "3.1.1"
