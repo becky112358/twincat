@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind, Result};
 use std::thread;
 use std::time::Duration;
 
-use twincat::{path_verify, Client, Variable as V};
+use twincat::{path_verify, Client, State, Variable as V};
 
 fn main() -> Result<()> {
     let client = Client::builder()
@@ -10,6 +10,8 @@ fn main() -> Result<()> {
         .connect()?;
 
     println!("{:#?}", client.symbols());
+
+    toggle_state(&client)?;
 
     println!("{:?}", client.get_value("HOUSE.ADDRESS")?);
 
@@ -44,6 +46,18 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+fn toggle_state(client: &Client) -> Result<()> {
+    println!("{:?}", client.get_ads_state()?);
+    client.set_ads_state(State::Run)?;
+    println!("{:?}", client.get_ads_state()?);
+    client.set_ads_state(State::Stop)?;
+    println!("{:?}", client.get_ads_state()?);
+    client.set_ads_state(State::Run)?;
+    println!("{:?}", client.get_ads_state()?);
+
+    Ok(())
+}
+
 #[path_verify(twincat::Client::builder().with_ams_address([192, 168, 220, 62, 1, 1]).connect().unwrap(); ALL_ROOMS)]
 fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
     match client.get_value(format!("MAIN.{room}.actual_luminosity_lumens"))? {
@@ -66,6 +80,7 @@ fn set_room_luminosity(client: &Client, room: &str, luminosity: u16) -> Result<(
 
 fn verify_heating(client: &Client) -> Result<()> {
     // Setup
+    client.set_ads_state(State::Run)?;
     client.set_value("MAIN.living_room.is_occupied", V::Bool(false))?;
     client.set_value("MAIN.living_room.actual_temperature_oc", V::F32(22.4))?;
 

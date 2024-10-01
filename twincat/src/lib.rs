@@ -3,6 +3,8 @@ mod client;
 pub use client::Client;
 mod result;
 mod rx;
+mod state;
+pub use state::State;
 mod symbols;
 mod tx;
 mod variables;

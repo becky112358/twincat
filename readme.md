@@ -1,15 +1,18 @@
 ## Tools to interact with TwinCAT using ADS
 
+- Get & Set the ADS state
 - Get & Set variable values
 
 ### Example
 ```
 use std::io::Result;
 
-use twincat::{path_verify, Client};
+use twincat::{path_verify, Client, State};
 
 fn main() -> Result<()> {
     let client = Client::builder::connect();
+
+    client.set_ads_state(State::Run)?;
 
     set_room_luminosity(&client, "living_room", 687)?;
     let luminosity_lumens = get_room_luminosity(&client, "living_room")?;
