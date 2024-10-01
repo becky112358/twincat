@@ -12,3 +12,4 @@ repository = "https://github.com/becky112358/twincat"
 bindgen = "0.70.1"
 
 [dependencies]
+zerocopy = "0.7.35"

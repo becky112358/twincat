@@ -31,7 +31,7 @@ impl ClientBuilder {
         };
 
         Ok(Client {
-            _ams_address: self.ams_address,
+            ams_address: self.ams_address,
             port,
             symbols,
         })
@@ -40,7 +40,7 @@ impl ClientBuilder {
 
 #[derive(Clone)]
 pub struct Client {
-    _ams_address: beckhoff::AmsAddr,
+    ams_address: beckhoff::AmsAddr,
     port: i32,
     symbols: symbols::Symbols,
 }
@@ -60,6 +60,12 @@ impl Client {
         ClientBuilder { ams_address }
     }
 
+    pub(super) fn ams_address(&self) -> &beckhoff::AmsAddr {
+        &self.ams_address
+    }
+    pub(super) fn port(&self) -> i32 {
+        self.port
+    }
     pub fn symbols(&self) -> &symbols::Symbols {
         &self.symbols
     }

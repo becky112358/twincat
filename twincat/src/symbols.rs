@@ -18,14 +18,14 @@ pub struct SymbolInfo {
 
 #[derive(Clone, Debug)]
 pub struct SymbolDataType {
-    _id: u32,
+    id: u32,
     name: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct DataTypeInfo {
     name: String,
-    _size_bytes: u32,
+    size_bytes: u32,
     _comment: Option<String>,
     fields: Vec<SymbolInfo>,
 }
@@ -248,7 +248,7 @@ impl SymbolInfo {
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
         let data_type = SymbolDataType {
-            _id: entry.dataType,
+            id: entry.dataType,
             name: data_type_name,
         };
 
@@ -279,7 +279,7 @@ impl SymbolInfo {
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
         let data_type = SymbolDataType {
-            _id: entry.dataType,
+            id: entry.dataType,
             name: data_type_name,
         };
 
@@ -291,6 +291,16 @@ impl SymbolInfo {
             },
             entry.entryLength as usize,
         ))
+    }
+
+    pub(super) fn data_type(&self) -> &SymbolDataType {
+        &self.data_type
+    }
+}
+
+impl SymbolDataType {
+    pub(super) fn id(&self) -> u32 {
+        self.id
     }
 }
 
@@ -323,12 +333,16 @@ impl DataTypeInfo {
         Ok((
             Self {
                 name: bytes_get_string(&bytes[name_start..name_end])?,
-                _size_bytes: entry.size,
+                size_bytes: entry.size,
                 _comment: comment,
                 fields,
             },
             entry.entryLength as usize,
         ))
+    }
+
+    pub(super) fn size_bytes(&self) -> u32 {
+        self.size_bytes
     }
 }
 
