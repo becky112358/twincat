@@ -2,7 +2,10 @@
 name = "twincat"
 version = "0.1.0"
 edition = "2021"
+description = "TwinCAT ADS tools"
+keywords = ["Beckhoff", "TwinCAT", "ADS", "Structured-Text"]
 license = "MIT"
 readme = "readme.md"
+repository = "https://github.com/becky112358/twincat"
 
 [dependencies]
