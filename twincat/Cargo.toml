@@ -8,4 +8,7 @@ license = "MIT"
 readme = "readme.md"
 repository = "https://github.com/becky112358/twincat"
 
+[build-dependencies]
+bindgen = "0.70.1"
+
 [dependencies]
