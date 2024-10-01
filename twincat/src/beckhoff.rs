@@ -6,3 +6,12 @@
 #![allow(clippy::upper_case_acronyms)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
+
+impl Default for AmsAddr {
+    fn default() -> Self {
+        Self {
+            netId: AmsNetId_ { b: [0; 6] },
+            port: 851,
+        }
+    }
+}

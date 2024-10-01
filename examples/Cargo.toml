@@ -1,0 +1,8 @@
+[package]
+name = "twincat_examples"
+version = "0.1.0"
+edition = "2021"
+description = "TwinCAT ADS example usage"
+
+[dependencies]
+twincat = { path = "../twincat" }
