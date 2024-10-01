@@ -1,4 +1,6 @@
 use std::io::{Error, ErrorKind, Result};
+use std::thread;
+use std::time::Duration;
 
 use twincat::{path_verify, Client, Variable as V};
 
@@ -37,6 +39,8 @@ fn main() -> Result<()> {
         client.get_value("garden.vegetable_plot_at_back[2,1,0]")?
     );
 
+    verify_heating(&client)?;
+
     Ok(())
 }
 
@@ -57,6 +61,90 @@ fn set_room_luminosity(client: &Client, room: &str, luminosity: u16) -> Result<(
         format!("MAIN.{room}.actual_luminosity_lumens"),
         V::U16(luminosity),
     )?;
+    Ok(())
+}
+
+fn verify_heating(client: &Client) -> Result<()> {
+    // Setup
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(false))?;
+    client.set_value("MAIN.living_room.actual_temperature_oc", V::F32(22.4))?;
+
+    thread::sleep(Duration::from_secs(5));
+
+    // Room is warm => Heating is off
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(false)
+    );
+
+    client.set_value("MAIN.living_room.actual_temperature_oc", V::F32(12.4))?;
+
+    thread::sleep(Duration::from_secs(5));
+
+    // Room is cold but unoccupied => Heating is off
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(false)
+    );
+
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(true))?;
+
+    thread::sleep(Duration::from_secs(1));
+
+    // Room is cold and occupied => Heating is on
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(true)
+    );
+
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(false))?;
+
+    for _ in 0..5 {
+        thread::sleep(Duration::from_secs(5));
+
+        // Room is cold and was occupied recently => Heating is on
+        assert_eq!(
+            client.get_value("MAIN.living_room.heating_on")?,
+            V::Bool(true)
+        );
+    }
+
+    thread::sleep(Duration::from_secs(7));
+
+    // Room is cold but unoccupied => Heating is off
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(false)
+    );
+
+    // Room is occupied, then briefly unoccupied, then reoccupied => Heating remains on
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(true))?;
+
+    thread::sleep(Duration::from_secs(5));
+
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(true)
+    );
+
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(false))?;
+
+    thread::sleep(Duration::from_secs(5));
+
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(true)
+    );
+
+    client.set_value("MAIN.living_room.is_occupied", V::Bool(true))?;
+
+    thread::sleep(Duration::from_secs(35));
+
+    assert_eq!(
+        client.get_value("MAIN.living_room.heating_on")?,
+        V::Bool(true)
+    );
+
     Ok(())
 }
 
