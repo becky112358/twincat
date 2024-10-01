@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="Fridge" Id="{b7379810-920a-438c-89f1-2560272f9146}">
+    <Declaration><![CDATA[TYPE Fridge :
+STRUCT
+// Store meat at the bottom
+    top_shelf    : ARRAY [0..7] OF Food;
+    middle_shelf : ARRAY [0..7] OF Food;
+    bottom_shelf : ARRAY [0..7] OF Food;
+    drawer       : ARRAY [0..3] OF Food;
+    door_shelf   : ARRAY [0..3] OF Food;
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

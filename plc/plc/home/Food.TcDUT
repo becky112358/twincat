@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="Food" Id="{8b460533-974d-4a5f-a6e6-5d277f2da8e4}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+{attribute 'to_string'}
+TYPE Food :
+(
+    Nothing,
+    Carrot,
+    Cabbage,
+    Broccoli,
+    Peas,
+	Tofu,
+    Humous,
+    LentilCurry
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

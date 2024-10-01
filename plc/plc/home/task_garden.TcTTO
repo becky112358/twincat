@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <Task Name="task_garden" Id="{9163d931-5c50-4a85-8054-90e6065d3834}">
+    <!--CycleTime in micro seconds.-->
+    <CycleTime>10000</CycleTime>
+    <Priority>1</Priority>
+    <PouCall>
+      <Name>garden</Name>
+    </PouCall>
+    <TaskFBGuid>{4d07fa13-1782-4af3-8e51-3222a7972c8c}</TaskFBGuid>
+    <Fb_init>{1a9f52ff-5ad1-464a-b4d5-66e854cd6ee9}</Fb_init>
+    <Fb_exit>{7b1ef53a-d7b4-4229-b2f8-48bb3fff892e}</Fb_exit>
+    <CycleUpdate>{4d5223d7-8a13-4a48-9269-7bc5beec4a7f}</CycleUpdate>
+    <PostCycleUpdate>{9ec746b9-4960-465a-bfc3-fb912c95f322}</PostCycleUpdate>
+  </Task>
+</TcPlcObject>

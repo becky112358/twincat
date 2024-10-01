@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="kitchen" Id="{0498317b-10e2-4981-ab18-8a40fbcd9ccb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK kitchen EXTENDS room
+VAR_INPUT
+    n_broccolis : USINT := 0;
+END_VAR
+VAR
+    fridge      : Fridge;
+    description : STRING := '';
+    i           : USINT  := 0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[FOR i := 0 TO MIN(n_broccolis, 7) DO
+    fridge.top_shelf[i] := Food.Broccoli;
+END_FOR
+
+fridge.middle_shelf[4] := Food.Humous;
+fridge.middle_shelf[5] := Food.Tofu;
+
+fridge.bottom_shelf[2] := Food.LentilCurry;
+
+fridge.drawer[0] := Food.Peas;
+
+fridge.door_shelf[0] := Food.Nothing;
+fridge.door_shelf[1] := Food.Nothing;
+fridge.door_shelf[2] := Food.Nothing;
+fridge.door_shelf[3] := Food.Nothing;
+
+description := TO_STRING(fridge.top_shelf[0]);
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

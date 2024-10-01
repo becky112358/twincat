@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="MAIN" Id="{203fc978-33c9-4170-91a9-66c47706bd0f}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+    kitchen     : kitchen;
+    dining_room : room;
+    living_room : room;
+    bedroom     : ARRAY [0..(HOUSE.N_BEDROOMS-1)]  OF room;
+    bathroom    : ARRAY [0..(HOUSE.N_BATHROOMS-1)] OF room;
+
+    i           : USINT := 0;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[kitchen(target_luminosity_lumens := 1300, target_temperature_oc := 19.5, n_broccolis := 3);
+dining_room(target_luminosity_lumens := 1100, target_temperature_oc := 19.5);
+living_room(target_luminosity_lumens := 800, target_temperature_oc := 19.5);
+
+FOR i := 0 TO (HOUSE.N_BEDROOMS-1) DO
+    bedroom[i](target_luminosity_lumens := 600, target_temperature_oc := 16.0);
+END_FOR
+
+FOR i := 0 TO (HOUSE.N_BATHROOMS-1) DO
+    bathroom[i](target_luminosity_lumens := 1300, target_temperature_oc := 18.5);
+END_FOR
+]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

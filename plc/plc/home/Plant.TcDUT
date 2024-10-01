@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <DUT Name="Plant" Id="{71ff0e8e-ee89-4e62-b227-15fe49b8c59f}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+{attribute 'strict'}
+TYPE Plant :
+(
+    AppleTree,
+    BlackberryBush,
+    Grass,
+    Ivy,
+    Hedge,
+	RoseBush
+);
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

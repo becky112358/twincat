@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+  <POU Name="room" Id="{ae2b00df-2148-488f-9787-a38fc4dad82f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK room
+VAR_INPUT
+    target_luminosity_lumens : UINT := 1000;
+    target_temperature_oc    : REAL := 18.5;
+END_VAR
+VAR
+    actual_luminosity_lumens : UINT := 1200;
+    actual_temperature_oc    : REAL := 18.5;
+    is_occupied              : BOOL := FALSE;
+	heating_on               : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[heating_on := heating();
+]]></ST>
+    </Implementation>
+    <Method Name="heating" Id="{881f8f65-5770-4f20-9d70-51f47b668f40}">
+      <Declaration><![CDATA[METHOD PRIVATE heating : BOOL
+VAR_INST
+    heating_on 					  : BOOL := FALSE;
+	was_occupied_at_previous_step : BOOL := FALSE;
+	timer                         : TON;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[IF is_occupied THEN
+	timer(IN := FALSE);
+ELSIF was_occupied_at_previous_step AND NOT is_occupied THEN
+	timer(
+		IN := TRUE,
+		PT := TIME#30S,
+	);
+END_IF
+
+timer();
+
+IF actual_temperature_oc >= target_temperature_oc THEN
+	heating_on := FALSE;
+ELSIF (actual_temperature_oc < target_temperature_oc) AND is_occupied THEN
+	heating_on := TRUE;
+ELSIF NOT is_occupied AND timer.Q THEN
+	heating_on := FALSE;
+END_IF
+
+was_occupied_at_previous_step := is_occupied;
+
+heating := heating_on;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="lights" Id="{9a068daf-56b1-462e-8d73-4b46c6602a85}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable'}
+METHOD PRIVATE lights
+VAR
+    light_on : BOOL := FALSE;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[light_on := (actual_luminosity_lumens < target_luminosity_lumens)
+         AND is_occupied;
+]]></ST>
+      </Implementation>
+    </Method>
+    <Method Name="update_actual_temperature_oc" Id="{ef13cd35-9ac6-481c-9eba-ea6372ba83f0}">
+      <Declaration><![CDATA[{attribute 'TcRpcEnable'}
+METHOD update_actual_temperature_oc : BOOL
+VAR_INPUT
+    new_temperature_oc : SINT;
+END_VAR
+]]></Declaration>
+      <Implementation>
+        <ST><![CDATA[actual_temperature_oc := SINT_TO_REAL(new_temperature_oc);
+
+update_actual_temperature_oc := TRUE;
+]]></ST>
+      </Implementation>
+    </Method>
+  </POU>
+</TcPlcObject>
