@@ -1,6 +1,6 @@
 ## Tools to interact with TwinCAT using ADS
 
-- Get variable values
+- Get & Set variable values
 
 ### Example
 ```
@@ -11,6 +11,7 @@ use twincat::Client;
 fn main() -> Result<()> {
     let client = Client::builder::connect();
 
+    set_room_luminosity(&client, "living_room", 687)?;
     let luminosity_lumens = get_room_luminosity(&client, "living_room")?;
 }
 
@@ -22,5 +23,13 @@ fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
             format!("Unexpected variable type {x:?}"),
         )),
     }
+}
+
+fn set_room_luminosity(client: &Client, room: &str, luminosity: u16) -> Result<()> {
+    client.set_value(
+        format!("MAIN.{room}.actual_luminosity_lumens"),
+        V::U16(luminosity),
+    )?;
+    Ok(())
 }
 ```

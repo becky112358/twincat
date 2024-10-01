@@ -17,6 +17,22 @@ impl Default for AmsAddr {
     }
 }
 
+impl Default for AdsSymbolEntry {
+    fn default() -> Self {
+        Self {
+            entryLength: 0,
+            iGroup: 0,
+            iOffs: 0,
+            size: 0,
+            dataType: 0,
+            flags: 0,
+            nameLength: 0,
+            typeLength: 0,
+            commentLength: 0,
+        }
+    }
+}
+
 impl Default for AdsSymbolUploadInfo2 {
     fn default() -> Self {
         Self {

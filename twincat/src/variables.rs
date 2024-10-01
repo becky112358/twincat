@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind, Result};
 
-use zerocopy::FromBytes;
+use zerocopy::{AsBytes, FromBytes};
 
 use super::symbols::SymbolInfo;
 
@@ -81,6 +81,31 @@ impl Variable {
             )),
         }
     }
+
+    pub(super) fn to_bytes(&self, symbol_info: &SymbolInfo) -> Result<Vec<u8>> {
+        match (self, symbol_info.data_type().id()) {
+            (Self::Void, 0) => Ok(Vec::new()),
+            (Self::Bool(inner), 33) => {
+                let byte: u8 = if *inner { 1 } else { 0 };
+                Ok(byte.as_bytes().to_vec())
+            }
+            (Self::I8(inner), 16) => Ok(inner.as_bytes().to_vec()),
+            (Self::I16(inner), 2) => Ok(inner.as_bytes().to_vec()),
+            (Self::I32(inner), 3) => Ok(inner.as_bytes().to_vec()),
+            (Self::I64(inner), 20) => Ok(inner.as_bytes().to_vec()),
+            (Self::U8(inner), 17) => Ok(inner.as_bytes().to_vec()),
+            (Self::U16(inner), 18) => Ok(inner.as_bytes().to_vec()),
+            (Self::U32(inner), 19) => Ok(inner.as_bytes().to_vec()),
+            (Self::U64(inner), 21) => Ok(inner.as_bytes().to_vec()),
+            (Self::F32(inner), 4) => Ok(inner.as_bytes().to_vec()),
+            (Self::F64(inner), 5) => Ok(inner.as_bytes().to_vec()),
+            (Self::String(inner), 30) => Ok(str_to_bytes(inner)),
+            _ => Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("Unexpected data type; expected {symbol_info:?}, got {self:?}"),
+            )),
+        }
+    }
 }
 
 pub(super) fn bytes_to_inner<T: FromBytes>(bytes: &[u8]) -> Result<T> {
@@ -108,4 +133,10 @@ fn bytes_to_string(bytes: &[u8]) -> Result<String> {
         Ok(s) => Ok(s),
         Err(err) => Err(Error::new(ErrorKind::Other, err.to_string())),
     }
+}
+
+fn str_to_bytes(inner: &str) -> Vec<u8> {
+    let mut output = inner.as_bytes().to_vec();
+    output.push(0);
+    output
 }
