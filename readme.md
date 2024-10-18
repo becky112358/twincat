@@ -10,12 +10,14 @@ use std::io::Result;
 use twincat::{path_verify, Client, State};
 
 fn main() -> Result<()> {
-    let client = Client::builder::connect();
+    let client = Client::builder::connect()?;
 
     client.set_ads_state(State::Run)?;
 
     set_room_luminosity(&client, "living_room", 687)?;
     let luminosity_lumens = get_room_luminosity(&client, "living_room")?;
+
+    Ok(())
 }
 
 #[path_verify(twincat::Client::builder().connect().unwrap(); ALL_ROOMS)]
