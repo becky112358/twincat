@@ -5,9 +5,7 @@ use std::time::Duration;
 use twincat::{path_verify, Client, State, Variable as V};
 
 fn main() -> Result<()> {
-    let client = Client::builder()
-        .with_ams_address([192, 168, 220, 62, 1, 1])
-        .connect()?;
+    let client = Client::builder().connect()?;
 
     println!("{:#?}", client.symbols());
 
@@ -58,7 +56,7 @@ fn toggle_state(client: &Client) -> Result<()> {
     Ok(())
 }
 
-#[path_verify(twincat::Client::builder().with_ams_address([192, 168, 220, 62, 1, 1]).connect().unwrap(); ALL_ROOMS)]
+#[path_verify(twincat::Client::builder().connect().unwrap(); ALL_ROOMS)]
 fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
     match client.get_value(format!("MAIN.{room}.actual_luminosity_lumens"))? {
         V::U16(inner) => Ok(inner),
@@ -69,7 +67,7 @@ fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
     }
 }
 
-#[path_verify(twincat::Client::builder().with_ams_address([192, 168, 220, 62, 1, 1]).connect().unwrap(); ALL_ROOMS; [0, 10, 20, 60, 100, 512, 1000, 2856])]
+#[path_verify(twincat::Client::builder().connect().unwrap(); ALL_ROOMS; [0, 10, 20, 60, 100, 512, 1000, 2856])]
 fn set_room_luminosity(client: &Client, room: &str, luminosity: u16) -> Result<()> {
     client.set_value(
         format!("MAIN.{room}.actual_luminosity_lumens"),

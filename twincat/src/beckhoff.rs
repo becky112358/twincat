@@ -11,7 +11,9 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 impl Default for AmsAddr {
     fn default() -> Self {
         Self {
-            netId: AmsNetId_ { b: [0; 6] },
+            netId: AmsNetId_ {
+                b: [127, 0, 0, 1, 1, 1],
+            },
             port: 851,
         }
     }
