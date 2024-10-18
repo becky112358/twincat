@@ -107,6 +107,11 @@ impl Symbols {
             None => &symbol_info.data_type.name,
         };
 
+        let base_type_as_string = match base_type_as_string.rfind(" TO ") {
+            Some(start) => base_type_as_string[start + 4..].trim(),
+            None => base_type_as_string,
+        };
+
         match self.data_types.get(base_type_as_string) {
             Some(dt) => Ok(dt),
             None => Err(Error::new(
