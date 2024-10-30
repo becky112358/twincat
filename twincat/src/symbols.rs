@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
+use std::str::FromStr;
 
 use super::{beckhoff, result};
 
@@ -27,6 +28,7 @@ pub struct DataTypeInfo {
     name: String,
     size_bytes: u32,
     _comment: Option<String>,
+    array_lengths: Vec<usize>,
     fields: Vec<SymbolInfo>,
 }
 
@@ -36,8 +38,10 @@ impl Symbols {
         value_name: &str,
     ) -> Result<(&SymbolInfo, &DataTypeInfo)> {
         let symbol_info = self.get_symbol(value_name)?;
-        let data_type_info = if value_name.contains("[") && value_name.contains("]") {
-            self.get_base_type_info(symbol_info)?
+
+        let n_array_accessings = count_array_accessors(value_name);
+        let data_type_info = if n_array_accessings > 0 {
+            self.get_base_type_info(symbol_info, Some(n_array_accessings))?
         } else {
             match self.data_types.get(&symbol_info.data_type.name) {
                 Some(dti) => dti,
@@ -81,7 +85,7 @@ impl Symbols {
 
         for token in &tokens[2..] {
             let token_base = str_trim_array_accessor(token);
-            let parent_data_type = self.get_base_type_info(symbol_entry)?;
+            let parent_data_type = self.get_base_type_info(symbol_entry, None)?;
             let mut found = false;
             for field in &parent_data_type.fields {
                 if field.name == *token_base {
@@ -101,10 +105,31 @@ impl Symbols {
         Ok(symbol_entry)
     }
 
-    fn get_base_type_info(&self, symbol_info: &SymbolInfo) -> Result<&DataTypeInfo> {
-        let base_type_as_string = match symbol_info.data_type.name.rfind(" OF ") {
-            Some(start) => symbol_info.data_type.name[start + 4..].trim(),
-            None => &symbol_info.data_type.name,
+    fn get_base_type_info(
+        &self,
+        symbol_info: &SymbolInfo,
+        n_array_accessings: Option<u8>,
+    ) -> Result<&DataTypeInfo> {
+        let base_type_as_string = match n_array_accessings {
+            Some(n) => {
+                let mut remainder = symbol_info.data_type.name.as_str();
+                for _ in 0..n {
+                    match remainder.find(" OF ") {
+                        Some(start) => remainder = remainder[start + 4..].trim(),
+                        None => {
+                            return Err(Error::new(
+                                ErrorKind::InvalidInput,
+                                "Out-of-bounds error: Too many array accessors!",
+                            ))
+                        }
+                    }
+                }
+                remainder
+            }
+            None => match symbol_info.data_type.name.rfind(" OF ") {
+                Some(start) => symbol_info.data_type.name[start + 4..].trim(),
+                None => &symbol_info.data_type.name,
+            },
         };
 
         let base_type_as_string = match base_type_as_string.rfind(" TO ") {
@@ -325,7 +350,11 @@ impl DataTypeInfo {
         let comment_end = comment_start + entry.commentLength as usize;
         let field_info_start = comment_end + 1 + (entry.arrayDim as usize * ARRAY_INFO_LENGTH);
 
+        let name = bytes_get_string(&bytes[name_start..name_end])?;
+
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
+
+        let array_lengths = name_get_array_lengths(&name).unwrap_or_default();
 
         let mut fields = Vec::new();
         let mut field_this_start = field_info_start;
@@ -337,9 +366,10 @@ impl DataTypeInfo {
 
         Ok((
             Self {
-                name: bytes_get_string(&bytes[name_start..name_end])?,
+                name,
                 size_bytes: entry.size,
                 _comment: comment,
+                array_lengths,
                 fields,
             },
             entry.entryLength as usize,
@@ -348,6 +378,9 @@ impl DataTypeInfo {
 
     pub(super) fn size_bytes(&self) -> u32 {
         self.size_bytes
+    }
+    pub(super) fn array_lengths(&self) -> &[usize] {
+        &self.array_lengths
     }
 }
 
@@ -369,6 +402,93 @@ fn bytes_get_string(bytes: &[u8]) -> Result<String> {
             format!("Cannot parse {bytes:?}"),
         ))
     }
+}
+
+fn count_array_accessors(input: &str) -> u8 {
+    let mut output = 0;
+
+    for c in input.chars().rev() {
+        if c == ']' {
+            output += 1;
+        } else if c == '.' {
+            break;
+        }
+    }
+
+    output
+}
+
+fn name_get_array_lengths(input: &str) -> Result<Vec<usize>> {
+    let mut output = Vec::new();
+
+    let mut remainder = input;
+
+    while remainder.contains("ARRAY") {
+        let square_start = match remainder.find('[') {
+            Some(i) => i,
+            None => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Cannot parse array dimensions: Cannot find '[' in {input}"),
+                ))
+            }
+        };
+        let square_end = match remainder.find(']') {
+            Some(i) => i,
+            None => {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Cannot parse array dimensions: Cannot find ']' in {input}"),
+                ))
+            }
+        };
+
+        if square_start > square_end {
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                format!("Cannot parse array dimensions: '[' comes after ']' in {input}"),
+            ));
+        }
+
+        let dimensions = remainder[square_start + 1..square_end]
+            .split(',')
+            .collect::<Vec<&str>>();
+
+        for dimension in dimensions {
+            let mid = match dimension.find("..") {
+                Some(i) => i,
+                None => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        format!("Cannot parse array dimensions: Cannot find \"..\" in {input}"),
+                    ))
+                }
+            };
+            let start_str = &dimension[..mid];
+            let end_str = &dimension[mid + 2..];
+            let start = match usize::from_str(start_str) {
+                Ok(u) => u,
+                Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid start dimension {start_str} ({e})"))),
+            };
+            let end = match usize::from_str(end_str) {
+                Ok(u) => u,
+                Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid end dimension {end_str} ({e})"))),
+            };
+
+            if start > end {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!("Invalid array dimensions: {start} > {end} in {input}"),
+                ));
+            }
+
+            output.push(end - start + 1);
+        }
+
+        remainder = &remainder[square_end + 1..];
+    }
+
+    Ok(output)
 }
 
 fn str_trim_array_accessor(input: &str) -> String {

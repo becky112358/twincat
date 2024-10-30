@@ -10,7 +10,7 @@ impl Client {
             .symbols()
             .get_symbol_and_data_type(value_name.as_ref())?;
         let bytes = self.get_raw_bytes(value_name.as_ref(), data_type_info.size_bytes())?;
-        Variable::from_bytes(symbol_info, &bytes)
+        Variable::from_bytes(symbol_info, data_type_info, &bytes)
     }
 
     fn get_raw_bytes(&self, value_name: &str, symbol_size_bytes: u32) -> Result<Vec<u8>> {

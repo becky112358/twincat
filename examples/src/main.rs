@@ -4,6 +4,8 @@ use std::time::Duration;
 
 use twincat::{path_verify, Client, State, Variable as V};
 
+mod arrays;
+
 fn main() -> Result<()> {
     let client = Client::builder().connect()?;
 
@@ -21,23 +23,7 @@ fn main() -> Result<()> {
 
     println!("{:?}", client.get_value("MAIN.bedroom[2].is_occupied")?);
 
-    println!("{:?}", client.get_value("garden.plants[3]")?);
-    client.set_value("garden.plants[3]", V::I16(4))?;
-    println!("{:?}", client.get_value("garden.plants[3]")?);
-    client.set_value("garden.plants[3]", V::I16(2))?;
-    println!("{:?}", client.get_value("garden.plants[3]")?);
-
-    client.set_value("garden.vegetable_plot_at_front[3][2][5]", V::I16(3))?;
-    println!(
-        "{:?}",
-        client.get_value("garden.vegetable_plot_at_front[3][2][5]")?
-    );
-
-    client.set_value("garden.vegetable_plot_at_back[2,1,0]", V::I16(2))?;
-    println!(
-        "{:?}",
-        client.get_value("garden.vegetable_plot_at_back[2,1,0]")?
-    );
+    arrays::arrays(&client)?;
 
     verify_heating(&client)?;
 

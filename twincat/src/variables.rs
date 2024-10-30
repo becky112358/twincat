@@ -2,9 +2,9 @@ use std::io::{Error, ErrorKind, Result};
 
 use zerocopy::{AsBytes, FromBytes};
 
-use super::symbols::SymbolInfo;
+use super::symbols::{DataTypeInfo, SymbolInfo};
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Variable {
     Void,
     Bool(bool),
@@ -19,10 +19,49 @@ pub enum Variable {
     F32(f32),
     F64(f64),
     String(String),
+    Array(Vec<Variable>),
 }
 
 impl Variable {
-    pub(super) fn from_bytes(symbol_info: &SymbolInfo, bytes: &[u8]) -> Result<Self> {
+    pub(super) fn from_bytes(
+        symbol_info: &SymbolInfo,
+        data_type_info: &DataTypeInfo,
+        bytes: &[u8],
+    ) -> Result<Self> {
+        let array_lengths = data_type_info.array_lengths();
+        Self::from_bytes_array(symbol_info, array_lengths, bytes)
+    }
+
+    fn from_bytes_array(
+        symbol_info: &SymbolInfo,
+        array_lengths: &[usize],
+        bytes: &[u8],
+    ) -> Result<Self> {
+        if array_lengths.is_empty() {
+            return Self::from_bytes_flat(symbol_info, bytes);
+        }
+
+        let array_length = array_lengths[0];
+        let mut elements = Vec::new();
+        let element_length = bytes.len() / array_length;
+        for i in 0..array_lengths[0] {
+            if array_lengths.len() == 1 {
+                elements.push(Self::from_bytes_flat(
+                    symbol_info,
+                    &bytes[i * element_length..(i + 1) * element_length],
+                )?);
+            } else {
+                elements.push(Self::from_bytes_array(
+                    symbol_info,
+                    &array_lengths[1..],
+                    &bytes[i * element_length..(i + 1) * element_length],
+                )?);
+            }
+        }
+        Ok(Self::Array(elements))
+    }
+
+    fn from_bytes_flat(symbol_info: &SymbolInfo, bytes: &[u8]) -> Result<Self> {
         match symbol_info.data_type().id() {
             0 => {
                 if bytes.is_empty() {
@@ -100,6 +139,13 @@ impl Variable {
             (Self::F32(inner), 4) => Ok(inner.as_bytes().to_vec()),
             (Self::F64(inner), 5) => Ok(inner.as_bytes().to_vec()),
             (Self::String(inner), 30) => Ok(str_to_bytes(inner)),
+            (Self::Array(array_inner), _) => {
+                let mut output = Vec::new();
+                for inner in array_inner {
+                    output.append(&mut inner.to_bytes(symbol_info)?);
+                }
+                Ok(output)
+            }
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
                 format!("Unexpected data type; expected {symbol_info:?}, got {self:?}"),
