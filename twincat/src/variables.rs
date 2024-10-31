@@ -1,8 +1,9 @@
+use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 
 use zerocopy::{AsBytes, FromBytes};
 
-use super::symbols::{DataTypeInfo, SymbolInfo};
+use super::symbols::{DataType, SymbolInfo};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Variable {
@@ -20,25 +21,40 @@ pub enum Variable {
     F64(f64),
     String(String),
     Array(Vec<Variable>),
+    Struct(Vec<(String, Variable)>),
 }
 
 impl Variable {
     pub(super) fn from_bytes(
+        data_types: &HashMap<String, DataType>,
         symbol_info: &SymbolInfo,
-        data_type_info: &DataTypeInfo,
+        symbol_data_type: &DataType,
         bytes: &[u8],
     ) -> Result<Self> {
-        let array_lengths = data_type_info.array_lengths();
-        Self::from_bytes_array(symbol_info, array_lengths, bytes)
+        let array_lengths = symbol_data_type.array_lengths();
+        Self::bytes_get_array(
+            data_types,
+            symbol_info,
+            symbol_data_type,
+            array_lengths,
+            bytes,
+        )
     }
 
-    fn from_bytes_array(
+    fn bytes_get_array(
+        data_types: &HashMap<String, DataType>,
         symbol_info: &SymbolInfo,
+        symbol_data_type: &DataType,
         array_lengths: &[usize],
         bytes: &[u8],
     ) -> Result<Self> {
         if array_lengths.is_empty() {
-            return Self::from_bytes_flat(symbol_info, bytes);
+            return Self::bytes_get_variable_inner(
+                data_types,
+                symbol_info,
+                symbol_data_type,
+                bytes,
+            );
         }
 
         let array_length = array_lengths[0];
@@ -46,23 +62,32 @@ impl Variable {
         let element_length = bytes.len() / array_length;
         for i in 0..array_lengths[0] {
             if array_lengths.len() == 1 {
-                elements.push(Self::from_bytes_flat(
+                elements.push(Self::bytes_get_variable_inner(
+                    data_types,
                     symbol_info,
+                    symbol_data_type,
                     &bytes[i * element_length..(i + 1) * element_length],
                 )?);
             } else {
-                elements.push(Self::from_bytes_array(
+                elements.push(Self::bytes_get_array(
+                    data_types,
                     symbol_info,
+                    symbol_data_type,
                     &array_lengths[1..],
                     &bytes[i * element_length..(i + 1) * element_length],
                 )?);
             }
         }
-        Ok(Self::Array(elements))
+        Ok(Variable::Array(elements))
     }
 
-    fn from_bytes_flat(symbol_info: &SymbolInfo, bytes: &[u8]) -> Result<Self> {
-        match symbol_info.data_type().id() {
+    fn bytes_get_variable_inner(
+        data_types: &HashMap<String, DataType>,
+        symbol_info: &SymbolInfo,
+        symbol_data_type: &DataType,
+        bytes: &[u8],
+    ) -> Result<Self> {
+        match symbol_info.data_type_id() {
             0 => {
                 if bytes.is_empty() {
                     Ok(Self::Void)
@@ -97,32 +122,73 @@ impl Variable {
             4 => Ok(Self::F32(bytes_to_inner(bytes)?)),
             5 => Ok(Self::F64(bytes_to_inner(bytes)?)),
             30 => Ok(Self::String(bytes_to_string(bytes)?)),
-            31 | 65 => Err(Error::new(
+            65 => Self::bytes_get_struct(data_types, symbol_data_type, bytes),
+            31 => Err(Error::new(
                 ErrorKind::Unsupported,
                 format!(
-                    "Type {:?} is not (yet?) supported (value {bytes:?})",
-                    symbol_info.data_type()
+                    "Type {} ({}) is not supported (value {bytes:?})",
+                    symbol_info.data_type(),
+                    symbol_info.data_type_id()
                 ),
             )),
             32 | 34 => Err(Error::new(
                 ErrorKind::InvalidData,
                 format!(
-                    "Type {:?} is reserved (value {bytes:?})",
-                    symbol_info.data_type()
+                    "Type {:?} ({}) is reserved (value {bytes:?})",
+                    symbol_info.data_type(),
+                    symbol_info.data_type_id()
                 ),
             )),
             _ => Err(Error::new(
                 ErrorKind::InvalidData,
                 format!(
-                    "Type {:?} is invalid (value {bytes:?})",
-                    symbol_info.data_type()
+                    "Type {:?} ({}) is invalid (value {bytes:?})",
+                    symbol_info.data_type(),
+                    symbol_info.data_type_id()
                 ),
             )),
         }
     }
 
+    fn bytes_get_struct(
+        data_types: &HashMap<String, DataType>,
+        symbol_data_type: &DataType,
+        bytes: &[u8],
+    ) -> Result<Self> {
+        let mut elements = Vec::new();
+        for field in symbol_data_type.fields() {
+            let field_data_type = match data_types.get(field.data_type()) {
+                Some(dti) => dti,
+                None => {
+                    return Err(Error::new(
+                        ErrorKind::InvalidData,
+                        format!("Cannot find {field:?} in data types"),
+                    ))
+                }
+            };
+            let index_start = field.offset();
+            let index_end = index_start + field_data_type.size_bytes();
+            if index_end > bytes.len() {
+                return Err(Error::new(
+                    ErrorKind::InvalidData,
+                    format!(
+                        "{} has offset {} and size {} but byte length is {}",
+                        field.name(),
+                        field.offset(),
+                        field_data_type.size_bytes(),
+                        bytes.len()
+                    ),
+                ));
+            }
+            let field_bytes = &bytes[index_start..index_end];
+            let field_value = Self::from_bytes(data_types, field, field_data_type, field_bytes)?;
+            elements.push((field.name().to_string(), field_value));
+        }
+        Ok(Self::Struct(elements))
+    }
+
     pub(super) fn to_bytes(&self, symbol_info: &SymbolInfo) -> Result<Vec<u8>> {
-        match (self, symbol_info.data_type().id()) {
+        match (self, symbol_info.data_type_id()) {
             (Self::Void, 0) => Ok(Vec::new()),
             (Self::Bool(inner), 33) => {
                 let byte: u8 = if *inner { 1 } else { 0 };
@@ -146,6 +212,10 @@ impl Variable {
                 }
                 Ok(output)
             }
+            (Self::Struct(_), 65) => Err(Error::new(
+                ErrorKind::Unsupported,
+                "Writing structs is not supported",
+            )),
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
                 format!("Unexpected data type; expected {symbol_info:?}, got {self:?}"),

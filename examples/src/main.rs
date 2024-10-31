@@ -5,6 +5,7 @@ use std::time::Duration;
 use twincat::{path_verify, Client, State, Variable as V};
 
 mod arrays;
+mod complex_types;
 
 fn main() -> Result<()> {
     let client = Client::builder().connect()?;
@@ -24,6 +25,8 @@ fn main() -> Result<()> {
     println!("{:?}", client.get_value("MAIN.bedroom[2].is_occupied")?);
 
     arrays::arrays(&client)?;
+
+    complex_types::complex_types(&client)?;
 
     verify_heating(&client)?;
 

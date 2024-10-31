@@ -7,43 +7,39 @@ use super::{beckhoff, result};
 #[derive(Clone, Debug, Default)]
 pub struct Symbols {
     symbols: HashMap<String, SymbolInfo>,
-    data_types: HashMap<String, DataTypeInfo>,
+    data_types: HashMap<String, DataType>,
 }
 
 #[derive(Clone, Debug)]
 pub struct SymbolInfo {
     name: String,
-    data_type: SymbolDataType,
+    data_type_id: u8,
+    data_type_name: String,
+    offset: usize,
     _comment: Option<String>,
 }
 
 #[derive(Clone, Debug)]
-pub struct SymbolDataType {
-    id: u32,
+pub struct DataType {
     name: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct DataTypeInfo {
-    name: String,
-    size_bytes: u32,
+    size_bytes: usize,
     _comment: Option<String>,
     array_lengths: Vec<usize>,
     fields: Vec<SymbolInfo>,
 }
 
 impl Symbols {
-    pub fn get_symbol_and_data_type(
+    pub(super) fn get_symbol_and_data_type(
         &self,
         value_name: &str,
-    ) -> Result<(&SymbolInfo, &DataTypeInfo)> {
+    ) -> Result<(&SymbolInfo, &DataType)> {
         let symbol_info = self.get_symbol(value_name)?;
 
         let n_array_accessings = count_array_accessors(value_name);
         let data_type_info = if n_array_accessings > 0 {
             self.get_base_type_info(symbol_info, Some(n_array_accessings))?
         } else {
-            match self.data_types.get(&symbol_info.data_type.name) {
+            match self.data_types.get(&symbol_info.data_type_name) {
                 Some(dti) => dti,
                 None => {
                     return Err(Error::new(
@@ -109,10 +105,10 @@ impl Symbols {
         &self,
         symbol_info: &SymbolInfo,
         n_array_accessings: Option<u8>,
-    ) -> Result<&DataTypeInfo> {
+    ) -> Result<&DataType> {
         let base_type_as_string = match n_array_accessings {
             Some(n) => {
-                let mut remainder = symbol_info.data_type.name.as_str();
+                let mut remainder = symbol_info.data_type_name.as_str();
                 for _ in 0..n {
                     match remainder.find(" OF ") {
                         Some(start) => remainder = remainder[start + 4..].trim(),
@@ -126,9 +122,9 @@ impl Symbols {
                 }
                 remainder
             }
-            None => match symbol_info.data_type.name.rfind(" OF ") {
-                Some(start) => symbol_info.data_type.name[start + 4..].trim(),
-                None => &symbol_info.data_type.name,
+            None => match symbol_info.data_type_name.rfind(" OF ") {
+                Some(start) => symbol_info.data_type_name[start + 4..].trim(),
+                None => &symbol_info.data_type_name,
             },
         };
 
@@ -145,9 +141,16 @@ impl Symbols {
             )),
         }
     }
+
+    pub fn symbols(&self) -> &HashMap<String, SymbolInfo> {
+        &self.symbols
+    }
+    pub(super) fn data_types(&self) -> &HashMap<String, DataType> {
+        &self.data_types
+    }
 }
 
-pub fn upload(ams_address: &beckhoff::AmsAddr, ads_port: i32) -> Result<Symbols> {
+pub(super) fn upload(ams_address: &beckhoff::AmsAddr, ads_port: i32) -> Result<Symbols> {
     let mut symbols = Symbols::default();
 
     let mut address = *ams_address;
@@ -228,7 +231,7 @@ fn upload_data_types(
     ads_port: i32,
     size: u32,
     n: u32,
-) -> Result<HashMap<String, DataTypeInfo>> {
+) -> Result<HashMap<String, DataType>> {
     let mut output = HashMap::new();
 
     let mut address = *ams_address;
@@ -251,7 +254,7 @@ fn upload_data_types(
 
     let mut offset = 0;
     for _ in 0..n {
-        let (data_type_info, n_bytes) = DataTypeInfo::from_bytes(&buffer[offset..])?;
+        let (data_type_info, n_bytes) = DataType::from_bytes(&buffer[offset..])?;
         output.insert(data_type_info.name.clone(), data_type_info);
 
         offset += n_bytes;
@@ -277,15 +280,12 @@ impl SymbolInfo {
         let data_type_name = bytes_get_string(&bytes[data_type_name_start..data_type_name_end])?;
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
-        let data_type = SymbolDataType {
-            id: entry.dataType,
-            name: data_type_name,
-        };
-
         Ok((
             Self {
                 name: bytes_get_string(&bytes[name_start..name_end])?,
-                data_type,
+                data_type_id: entry.dataType as u8,
+                data_type_name,
+                offset: entry.iOffs as usize,
                 _comment: comment,
             },
             entry.entryLength as usize,
@@ -308,33 +308,33 @@ impl SymbolInfo {
         let data_type_name = bytes_get_string(&bytes[data_type_name_start..data_type_name_end])?;
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
-        let data_type = SymbolDataType {
-            id: entry.dataType,
-            name: data_type_name,
-        };
-
         Ok((
             Self {
                 name: bytes_get_string(&bytes[name_start..name_end])?,
-                data_type,
+                data_type_id: entry.dataType as u8,
+                data_type_name,
+                offset: entry.offs as usize,
                 _comment: comment,
             },
             entry.entryLength as usize,
         ))
     }
 
-    pub(super) fn data_type(&self) -> &SymbolDataType {
-        &self.data_type
+    pub(super) fn name(&self) -> &str {
+        &self.name
+    }
+    pub(super) fn data_type_id(&self) -> u8 {
+        self.data_type_id
+    }
+    pub(super) fn data_type(&self) -> &str {
+        &self.data_type_name
+    }
+    pub(super) fn offset(&self) -> usize {
+        self.offset
     }
 }
 
-impl SymbolDataType {
-    pub(super) fn id(&self) -> u32 {
-        self.id
-    }
-}
-
-impl DataTypeInfo {
+impl DataType {
     fn from_bytes(bytes: &[u8]) -> Result<(Self, usize)> {
         const DETAILS_LENGTH: usize = std::mem::size_of::<beckhoff::AdsDatatypeEntry>();
         const ARRAY_INFO_LENGTH: usize = std::mem::size_of::<beckhoff::AdsDatatypeArrayInfo>();
@@ -367,7 +367,7 @@ impl DataTypeInfo {
         Ok((
             Self {
                 name,
-                size_bytes: entry.size,
+                size_bytes: entry.size as usize,
                 _comment: comment,
                 array_lengths,
                 fields,
@@ -376,11 +376,14 @@ impl DataTypeInfo {
         ))
     }
 
-    pub(super) fn size_bytes(&self) -> u32 {
+    pub(super) fn size_bytes(&self) -> usize {
         self.size_bytes
     }
     pub(super) fn array_lengths(&self) -> &[usize] {
         &self.array_lengths
+    }
+    pub(super) fn fields(&self) -> &[SymbolInfo] {
+        &self.fields
     }
 }
 
