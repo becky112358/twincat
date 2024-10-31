@@ -6,14 +6,15 @@ use super::{beckhoff, result};
 
 impl Client {
     pub fn get_value(&self, value_name: impl AsRef<str>) -> Result<Variable> {
+        let data_types = self.symbols().data_types();
         let (symbol_info, data_type_info) = self
             .symbols()
             .get_symbol_and_data_type(value_name.as_ref())?;
         let bytes = self.get_raw_bytes(value_name.as_ref(), data_type_info.size_bytes())?;
-        Variable::from_bytes(symbol_info, data_type_info, &bytes)
+        Variable::from_bytes(data_types, symbol_info, data_type_info, &bytes)
     }
 
-    fn get_raw_bytes(&self, value_name: &str, symbol_size_bytes: u32) -> Result<Vec<u8>> {
+    fn get_raw_bytes(&self, value_name: &str, symbol_size_bytes: usize) -> Result<Vec<u8>> {
         const SIZE_U32: u32 = std::mem::size_of::<u32>() as u32;
 
         let ptr_address = &mut self.ams_address().to_owned() as *mut beckhoff::AmsAddr;
@@ -37,7 +38,7 @@ impl Client {
             )
         })?;
 
-        let mut buffer = vec![0; symbol_size_bytes as usize];
+        let mut buffer = vec![0; symbol_size_bytes];
         let ptr_buffer = buffer.as_mut_ptr() as *mut std::os::raw::c_void;
 
         result::process(unsafe {
@@ -46,7 +47,7 @@ impl Client {
                 ptr_address,
                 beckhoff::ADSIGRP_SYM_VALBYHND,
                 handle,
-                symbol_size_bytes,
+                symbol_size_bytes as u32,
                 ptr_buffer,
                 std::ptr::null_mut(),
             )

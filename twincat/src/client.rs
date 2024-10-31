@@ -42,7 +42,7 @@ impl ClientBuilder {
 pub struct Client {
     ams_address: beckhoff::AmsAddr,
     port: i32,
-    symbols: symbols::Symbols,
+    symbols: symbols::SymbolsAndDataTypes,
 }
 
 impl Drop for Client {
@@ -66,7 +66,7 @@ impl Client {
     pub(super) fn port(&self) -> i32 {
         self.port
     }
-    pub fn symbols(&self) -> &symbols::Symbols {
+    pub fn symbols(&self) -> &symbols::SymbolsAndDataTypes {
         &self.symbols
     }
 }
