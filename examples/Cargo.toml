@@ -8,4 +8,4 @@ description = "TwinCAT ADS example usage"
 twincat = { path = "../twincat" }
 
 [dev-dependencies]
-serial_test = "3.1.1"
+serial_test = "3.2.0"

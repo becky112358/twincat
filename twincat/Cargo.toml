@@ -15,4 +15,4 @@ bindgen = "0.70.1"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 twincat_derive = { path = "../twincat_derive", version = "0.1.0" }
-zerocopy = "0.7.35"
+zerocopy = "0.8.10"

@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind, Result};
 
-use zerocopy::{AsBytes, FromBytes};
+use zerocopy::{FromBytes, IntoBytes};
 
 use super::symbols::{DataType, DataTypes, Symbol};
 
@@ -210,11 +210,11 @@ impl Variable {
 }
 
 pub(super) fn bytes_to_inner<T: FromBytes>(bytes: &[u8]) -> Result<T> {
-    match T::read_from(bytes) {
-        Some(t) => Ok(t),
-        None => Err(Error::new(
+    match T::read_from_bytes(bytes) {
+        Ok(t) => Ok(t),
+        Err(e) => Err(Error::new(
             ErrorKind::InvalidData,
-            format!("Cannot parse {bytes:?}"),
+            format!("Cannot parse {bytes:?}\n{e:?}"),
         )),
     }
 }
