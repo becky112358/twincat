@@ -10,7 +10,7 @@ mod complex_types;
 fn main() -> Result<()> {
     let client = Client::builder().connect()?;
 
-    println!("{:#?}", client.symbols());
+    println!("{:#?}", client.symbols_and_data_types());
 
     toggle_state(&client)?;
 

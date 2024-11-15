@@ -6,9 +6,9 @@ use super::{beckhoff, result};
 
 impl Client {
     pub fn get_value(&self, value_name: impl AsRef<str>) -> Result<Variable> {
-        let data_types = self.symbols().data_types();
+        let data_types = self.symbols_and_data_types().data_types();
         let (symbol_info, data_type_info) = self
-            .symbols()
+            .symbols_and_data_types()
             .get_symbol_and_data_type(value_name.as_ref())?;
         let bytes = self.get_raw_bytes(value_name.as_ref(), data_type_info.size_bytes())?;
         Variable::from_bytes(data_types, symbol_info, data_type_info, &bytes)

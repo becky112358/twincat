@@ -21,7 +21,7 @@ impl ClientBuilder {
         unsafe { beckhoff::AdsPortOpen() };
         let port = unsafe { beckhoff::AdsPortOpenEx() };
 
-        let symbols = match symbols::upload(&self.ams_address, port) {
+        let symbols_and_data_types = match symbols::upload(&self.ams_address, port) {
             Ok(s) => s,
             Err(e) => {
                 unsafe { beckhoff::AdsPortCloseEx(port) };
@@ -33,7 +33,7 @@ impl ClientBuilder {
         Ok(Client {
             ams_address: self.ams_address,
             port,
-            symbols,
+            symbols_and_data_types,
         })
     }
 }
@@ -42,7 +42,7 @@ impl ClientBuilder {
 pub struct Client {
     ams_address: beckhoff::AmsAddr,
     port: i32,
-    symbols: symbols::SymbolsAndDataTypes,
+    symbols_and_data_types: symbols::SymbolsAndDataTypes,
 }
 
 impl Drop for Client {
@@ -66,7 +66,7 @@ impl Client {
     pub(super) fn port(&self) -> i32 {
         self.port
     }
-    pub fn symbols(&self) -> &symbols::SymbolsAndDataTypes {
-        &self.symbols
+    pub fn symbols_and_data_types(&self) -> &symbols::SymbolsAndDataTypes {
+        &self.symbols_and_data_types
     }
 }
