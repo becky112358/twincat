@@ -4,6 +4,8 @@ use zerocopy::{FromBytes, IntoBytes};
 
 use super::symbols::{DataType, DataTypes, Symbol};
 
+mod try_into;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Variable {
     Void,

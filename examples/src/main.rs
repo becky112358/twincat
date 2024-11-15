@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind, Result};
+use std::io::Result;
 use std::thread;
 use std::time::Duration;
 
@@ -47,13 +47,9 @@ fn toggle_state(client: &Client) -> Result<()> {
 
 #[path_verify(twincat::Client::builder().connect().unwrap(); ALL_ROOMS)]
 fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
-    match client.get_value(format!("MAIN.{room}.actual_luminosity_lumens"))? {
-        V::U16(inner) => Ok(inner),
-        x => Err(Error::new(
-            ErrorKind::Other,
-            format!("Unexpected variable type {x:?}"),
-        )),
-    }
+    client
+        .get_value(format!("MAIN.{room}.actual_luminosity_lumens"))?
+        .try_into()
 }
 
 #[path_verify(twincat::Client::builder().connect().unwrap(); ALL_ROOMS; [0, 10, 20, 60, 100, 512, 1000, 2856])]
