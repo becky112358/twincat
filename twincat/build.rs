@@ -5,9 +5,9 @@ fn main() {
     let target = env::var("TARGET").unwrap();
 
     let lib_dir = if target.contains("i686") {
-        "/TwinCAT/AdsApi/TcAdsDll/lib"
+        "C:/TwinCAT/AdsApi/TcAdsDll/Lib"
     } else {
-        "/TwinCAT/AdsApi/TcAdsDll/x64/lib"
+        "C:/TwinCAT/AdsApi/TcAdsDll/x64/lib"
     };
 
     println!("cargo:rustc-link-search=native={}", lib_dir);
