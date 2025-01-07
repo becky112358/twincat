@@ -10,7 +10,7 @@ TYPE Plant :
     Grass,
     Ivy,
     Hedge,
-	RoseBush
+    RoseBush
 );
 END_TYPE
 ]]></Declaration>

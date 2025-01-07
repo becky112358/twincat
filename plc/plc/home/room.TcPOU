@@ -10,7 +10,7 @@ VAR
     actual_luminosity_lumens : UINT := 1200;
     actual_temperature_oc    : REAL := 18.5;
     is_occupied              : BOOL := FALSE;
-	heating_on               : BOOL := FALSE;
+    heating_on               : BOOL := FALSE;
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -20,29 +20,29 @@ END_VAR
     <Method Name="heating" Id="{881f8f65-5770-4f20-9d70-51f47b668f40}">
       <Declaration><![CDATA[METHOD PRIVATE heating : BOOL
 VAR_INST
-    heating_on 					  : BOOL := FALSE;
-	was_occupied_at_previous_step : BOOL := FALSE;
-	timer                         : TON;
+    heating_on                    : BOOL := FALSE;
+    was_occupied_at_previous_step : BOOL := FALSE;
+    timer                         : TON;
 END_VAR
 ]]></Declaration>
       <Implementation>
         <ST><![CDATA[IF is_occupied THEN
-	timer(IN := FALSE);
+    timer(IN := FALSE);
 ELSIF was_occupied_at_previous_step AND NOT is_occupied THEN
-	timer(
-		IN := TRUE,
-		PT := TIME#30S,
-	);
+    timer(
+        IN := TRUE,
+        PT := TIME#30S,
+    );
 END_IF
 
 timer();
 
 IF actual_temperature_oc >= target_temperature_oc THEN
-	heating_on := FALSE;
+    heating_on := FALSE;
 ELSIF (actual_temperature_oc < target_temperature_oc) AND is_occupied THEN
-	heating_on := TRUE;
+    heating_on := TRUE;
 ELSIF NOT is_occupied AND timer.Q THEN
-	heating_on := FALSE;
+    heating_on := FALSE;
 END_IF
 
 was_occupied_at_previous_step := is_occupied;

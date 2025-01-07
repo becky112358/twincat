@@ -115,7 +115,7 @@ pub fn process(code: i32) -> Result<()> {
 
         beckhoff::ADSERR_CLIENT_ERROR                => error(code, "Error class < client error >"),
         beckhoff::ADSERR_CLIENT_INVALIDPARM          => error(code, "invalid parameter at service call"),
-        beckhoff::ADSERR_CLIENT_LISTEMPTY            => error(code, "polling list	is empty"),
+        beckhoff::ADSERR_CLIENT_LISTEMPTY            => error(code, "polling list is empty"),
         beckhoff::ADSERR_CLIENT_VARUSED              => error(code, "var connection already in use"),
         beckhoff::ADSERR_CLIENT_DUPLINVOKEID         => error(code, "invoke id in use"),
         beckhoff::ADSERR_CLIENT_SYNCTIMEOUT          => error(code, "timeout elapsed"),

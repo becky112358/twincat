@@ -11,7 +11,7 @@ TYPE Food :
     Cabbage,
     Broccoli,
     Peas,
-	Tofu,
+    Tofu,
     Humous,
     LentilCurry
 );
