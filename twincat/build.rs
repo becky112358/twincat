@@ -17,7 +17,7 @@ fn main() {
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h")
-        .clang_arg("-I/TwinCAT/AdsApi/TcAdsDll/Include")
+        .clang_arg("--include-directory=C:/TwinCAT/AdsApi/TcAdsDll/Include")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .unwrap();
