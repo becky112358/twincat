@@ -1,7 +1,7 @@
 use std::io::Result;
 
 use super::client::Client;
-use super::variables::Variable;
+use super::variables::{self, Variable};
 use super::{beckhoff, result};
 
 impl Client {
@@ -10,6 +10,15 @@ impl Client {
             .symbols_and_data_types()
             .get_symbol_and_data_type(value_name.as_ref())?;
         let bytes = value.to_bytes(symbol_info)?;
+        self.set_raw_bytes(value_name.as_ref(), bytes)?;
+        Ok(())
+    }
+
+    pub fn set_value_from_str(&self, value_name: impl AsRef<str>, value: &str) -> Result<()> {
+        let (symbol_info, _) = self
+            .symbols_and_data_types()
+            .get_symbol_and_data_type(value_name.as_ref())?;
+        let bytes = variables::str_and_symbol_to_bytes(value, symbol_info)?;
         self.set_raw_bytes(value_name.as_ref(), bytes)?;
         Ok(())
     }

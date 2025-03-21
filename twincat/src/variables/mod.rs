@@ -1,4 +1,5 @@
 use std::io::{Error, ErrorKind, Result};
+use std::str::FromStr;
 
 use zerocopy::{FromBytes, IntoBytes};
 
@@ -211,12 +212,78 @@ impl Variable {
     }
 }
 
+pub(super) fn str_and_symbol_to_bytes(value: &str, symbol: &Symbol) -> Result<Vec<u8>> {
+    match symbol.data_type_id() {
+        0 => {
+            if value.is_empty() {
+                Ok(vec![])
+            } else {
+                Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    format!("Expected void, got {value}"),
+                ))
+            }
+        }
+        33 => match bool::from_str(&value.to_lowercase()) {
+            Ok(b) => {
+                let byte = if b { 1 } else { 0 };
+                Ok(byte.as_bytes().to_vec())
+            }
+            Err(e) => Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("Expected bool, got {value} ({e:?})"),
+            )),
+        },
+        16 => from_str_to_bytes::<i8>(value),
+        2 => from_str_to_bytes::<i16>(value),
+        3 => from_str_to_bytes::<i32>(value),
+        20 => from_str_to_bytes::<i64>(value),
+        17 => from_str_to_bytes::<u8>(value),
+        18 => from_str_to_bytes::<u16>(value),
+        19 => from_str_to_bytes::<u32>(value),
+        21 => from_str_to_bytes::<u64>(value),
+        4 => from_str_to_bytes::<f32>(value),
+        5 => from_str_to_bytes::<f64>(value),
+        30 => Ok(str_to_bytes(value)),
+        65 | 31 => Err(Error::new(
+            ErrorKind::Unsupported,
+            format!(
+                "Type {} ({}) is not supported (value {value})",
+                symbol.data_type(),
+                symbol.data_type_id()
+            ),
+        )),
+        32 | 34 => Err(Error::new(
+            ErrorKind::InvalidData,
+            format!(
+                "Type {:?} ({}) is reserved (value {value})",
+                symbol.data_type(),
+                symbol.data_type_id()
+            ),
+        )),
+        _ => Err(Error::new(
+            ErrorKind::InvalidData,
+            format!("Unexpected data type\n{symbol:?}"),
+        )),
+    }
+}
+
 pub(super) fn bytes_to_inner<T: FromBytes>(bytes: &[u8]) -> Result<T> {
     match T::read_from_bytes(bytes) {
         Ok(t) => Ok(t),
         Err(e) => Err(Error::new(
             ErrorKind::InvalidData,
             format!("Cannot parse {bytes:?}\n{e:?}"),
+        )),
+    }
+}
+
+fn from_str_to_bytes<T: FromStr + zerocopy::Immutable + IntoBytes>(value: &str) -> Result<Vec<u8>> {
+    match T::from_str(value) {
+        Ok(t) => Ok(t.as_bytes().to_vec()),
+        Err(_) => Err(Error::new(
+            ErrorKind::InvalidInput,
+            format!("Cannot parse {value}"),
         )),
     }
 }
