@@ -180,7 +180,7 @@ impl Variable {
             (Self::Void, 0) => Ok(Vec::new()),
             (Self::Bool(inner), 33) => {
                 let byte: u8 = if *inner { 1 } else { 0 };
-                Ok(byte.as_bytes().to_vec())
+                Ok(vec![byte])
             }
             (Self::I8(inner), 16) => Ok(inner.as_bytes().to_vec()),
             (Self::I16(inner), 2) => Ok(inner.as_bytes().to_vec()),
@@ -227,7 +227,7 @@ pub(super) fn str_and_symbol_to_bytes(value: &str, symbol: &Symbol) -> Result<Ve
         33 => match bool::from_str(&value.to_lowercase()) {
             Ok(b) => {
                 let byte = if b { 1 } else { 0 };
-                Ok(byte.as_bytes().to_vec())
+                Ok(vec![byte])
             }
             Err(e) => Err(Error::new(
                 ErrorKind::InvalidInput,
