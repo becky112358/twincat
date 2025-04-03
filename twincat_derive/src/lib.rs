@@ -9,19 +9,17 @@ pub fn path_verify(
 ) -> proc_macro::TokenStream {
     let function = proc_macro2::TokenStream::from(item.clone());
 
-    let cfg_test = proc_macro2::TokenStream::from_str("#[cfg(test)]").unwrap();
-
-    let function_name = get_function_name(item);
-    let mod_name = quote::format_ident!("test_ads_path_verify_{function_name}");
-    let test_name = quote::format_ident!("ads_path_verify_{function_name}");
+    let function_ident = syn::parse_macro_input!(item as syn::ItemFn).sig.ident;
+    let mod_name = quote::format_ident!("test_ads_path_verify_{function_ident}");
+    let test_name = quote::format_ident!("ads_path_verify_{function_ident}");
 
     let (client, ranges) = get_client_and_ranges(attribute);
-    let inner = construct_loop(function_name, ranges);
+    let inner = construct_loop(function_ident, ranges);
 
     quote!(
         #function
 
-        #cfg_test
+        #[cfg(test)]
         mod #mod_name {
             use super::*;
 
@@ -35,16 +33,6 @@ pub fn path_verify(
         }
     )
     .into()
-}
-
-fn get_function_name(item: proc_macro::TokenStream) -> proc_macro2::TokenStream {
-    let function_declaration = item.to_string();
-    let start = function_declaration.find("fn").unwrap() + 2;
-    let middle = &function_declaration[start..].trim();
-    let end = middle.find('(').unwrap();
-    let function_name = &middle[..end].trim();
-
-    proc_macro2::TokenStream::from_str(function_name).unwrap()
 }
 
 fn get_client_and_ranges(
@@ -65,7 +53,7 @@ fn get_client_and_ranges(
 }
 
 fn construct_loop(
-    function_name: proc_macro2::TokenStream,
+    function_ident: syn::Ident,
     ranges: Vec<proc_macro2::TokenStream>,
 ) -> proc_macro2::TokenStream {
     let var_names = ranges
@@ -75,7 +63,7 @@ fn construct_loop(
         .collect::<Vec<syn::Ident>>();
 
     let mut inner = quote!(
-        assert!(#function_name(&client #(, #var_names)*).is_ok());
+        assert!(#function_ident(&client #(, #var_names)*).is_ok());
     );
 
     for (i, range) in ranges.iter().enumerate().rev() {
