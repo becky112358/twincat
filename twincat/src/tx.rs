@@ -6,10 +6,10 @@ use super::{beckhoff, result};
 
 impl Client {
     pub fn set_value(&self, value_name: impl AsRef<str>, value: Variable) -> Result<()> {
-        let (symbol_info, _) = self
+        let (symbol_info, data_type_info) = self
             .symbols_and_data_types()
             .get_symbol_and_data_type(value_name.as_ref())?;
-        let bytes = value.to_bytes(symbol_info)?;
+        let bytes = value.to_bytes(symbol_info, data_type_info)?;
         self.set_raw_bytes(value_name.as_ref(), bytes)?;
         Ok(())
     }

@@ -8,6 +8,6 @@ pub use state::State;
 mod symbols;
 mod tx;
 mod variables;
-pub use variables::Variable;
+pub use variables::{StartIndex, Variable};
 
 pub use twincat_derive::path_verify;

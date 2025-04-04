@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
+use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 use super::{beckhoff, result};
@@ -30,7 +31,7 @@ pub struct DataType {
     name: String,
     size_bytes: usize,
     _comment: Option<String>,
-    array_lengths: Vec<usize>,
+    array_ranges: Vec<RangeInclusive<i32>>,
     fields: Vec<Symbol>,
 }
 
@@ -380,7 +381,7 @@ impl DataType {
 
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
-        let array_lengths = name_get_array_lengths(&name).unwrap_or_default();
+        let array_ranges = name_get_array_ranges(&name).unwrap_or_default();
 
         let mut fields = Vec::new();
         let mut field_this_start = field_info_start;
@@ -395,7 +396,7 @@ impl DataType {
                 name,
                 size_bytes: entry.size as usize,
                 _comment: comment,
-                array_lengths,
+                array_ranges,
                 fields,
             },
             entry.entryLength as usize,
@@ -405,8 +406,8 @@ impl DataType {
     pub(super) fn size_bytes(&self) -> usize {
         self.size_bytes
     }
-    pub(super) fn array_lengths(&self) -> &[usize] {
-        &self.array_lengths
+    pub(super) fn array_ranges(&self) -> &[RangeInclusive<i32>] {
+        &self.array_ranges
     }
     pub(super) fn fields(&self) -> &[Symbol] {
         &self.fields
@@ -447,7 +448,7 @@ fn count_array_accessors(input: &str) -> u8 {
     output
 }
 
-fn name_get_array_lengths(input: &str) -> Result<Vec<usize>> {
+fn name_get_array_ranges(input: &str) -> Result<Vec<RangeInclusive<i32>>> {
     let mut output = Vec::new();
 
     let mut remainder = input;
@@ -495,12 +496,12 @@ fn name_get_array_lengths(input: &str) -> Result<Vec<usize>> {
             };
             let start_str = &dimension[..mid];
             let end_str = &dimension[mid + 2..];
-            let start = match usize::from_str(start_str) {
-                Ok(u) => u,
+            let start = match i32::from_str(start_str) {
+                Ok(x) => x,
                 Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid start dimension {start_str} ({e})"))),
             };
-            let end = match usize::from_str(end_str) {
-                Ok(u) => u,
+            let end = match i32::from_str(end_str) {
+                Ok(x) => x,
                 Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid end dimension {end_str} ({e})"))),
             };
 
@@ -511,7 +512,7 @@ fn name_get_array_lengths(input: &str) -> Result<Vec<usize>> {
                 ));
             }
 
-            output.push(end - start + 1);
+            output.push(RangeInclusive::new(start, end));
         }
 
         remainder = &remainder[square_end + 1..];

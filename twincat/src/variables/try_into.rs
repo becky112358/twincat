@@ -175,7 +175,7 @@ impl TryInto<Vec<Variable>> for Variable {
 
     fn try_into(self) -> Result<Vec<Variable>> {
         match self {
-            Self::Array(inner) => Ok(inner),
+            Self::Array(_, inner) => Ok(inner),
             other => Err(Error::new(
                 ErrorKind::InvalidInput,
                 format!("Expected Vec<>, got {other:?}"),
