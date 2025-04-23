@@ -2,6 +2,7 @@
 
 - Get & Set the ADS state
 - Get & Set variable values
+- Get all `PERSISTENT` variables
 
 ### Example
 ```

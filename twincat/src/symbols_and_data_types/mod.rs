@@ -5,6 +5,7 @@ use std::ops::RangeInclusive;
 use super::{beckhoff, result};
 
 mod array;
+mod persistent;
 
 #[derive(Clone, Debug, Default)]
 pub struct SymbolsAndDataTypes {
@@ -24,6 +25,7 @@ pub struct Symbol {
     data_type_id: u8,
     data_type_name: String,
     offset: usize,
+    persistent: bool,
     _comment: Option<String>,
 }
 
@@ -294,6 +296,8 @@ impl Symbol {
                 data_type_id: entry.dataType as u8,
                 data_type_name,
                 offset: entry.iOffs as usize,
+                persistent: entry.flags & beckhoff::ADSSYMBOLFLAG_PERSISTENT
+                    == beckhoff::ADSSYMBOLFLAG_PERSISTENT,
                 _comment: comment,
             },
             entry.entryLength as usize,
@@ -322,6 +326,8 @@ impl Symbol {
                 data_type_id: entry.dataType as u8,
                 data_type_name,
                 offset: entry.offs as usize,
+                persistent: (entry.flags >> 8) & beckhoff::ADSSYMBOLFLAG_PERSISTENT
+                    == beckhoff::ADSSYMBOLFLAG_PERSISTENT,
                 _comment: comment,
             },
             entry.entryLength as usize,

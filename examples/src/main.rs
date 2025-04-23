@@ -6,6 +6,7 @@ use twincat::{path_verify, Client, State, Variable as V};
 
 mod arrays;
 mod complex_types;
+mod persistent;
 
 fn main() -> Result<()> {
     let client = Client::builder().connect()?;
@@ -27,6 +28,8 @@ fn main() -> Result<()> {
     arrays::arrays(&client)?;
 
     complex_types::complex_types(&client)?;
+
+    persistent::persistent(&client)?;
 
     verify_heating(&client)?;
 

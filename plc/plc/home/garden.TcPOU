@@ -2,8 +2,10 @@
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
   <POU Name="garden" Id="{6f20a496-603f-46c2-9a09-180d6d6f661e}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM garden
-VAR
+VAR PERSISTENT
     plants                  : ARRAY [0..255] OF Plant;
+END_VAR
+VAR
     vegetable_plot_at_front : ARRAY [0..4] OF ARRAY [0..2] OF ARRAY [0..7] OF Plant;
     vegetable_plot_at_back  : ARRAY [0..3,0..5,0..6] OF Plant;
 END_VAR

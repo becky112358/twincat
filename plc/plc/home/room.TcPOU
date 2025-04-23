@@ -6,6 +6,9 @@ VAR_INPUT
     target_luminosity_lumens : UINT := 1000;
     target_temperature_oc    : REAL := 18.5;
 END_VAR
+VAR PERSISTENT
+    name                     : STRING;
+END_VAR
 VAR
     actual_luminosity_lumens : UINT := 1200;
     actual_temperature_oc    : REAL := 18.5;

@@ -5,8 +5,10 @@
 VAR_INPUT
     n_broccolis : USINT := 0;
 END_VAR
-VAR
+VAR PERSISTENT
     fridge      : Fridge;
+END_VAR
+VAR
     description : STRING := '';
     i           : USINT  := 0;
 END_VAR
