@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use zerocopy::{FromBytes, IntoBytes};
 
-use super::symbols::{DataType, DataTypes, Symbol};
+use crate::symbols_and_data_types::{DataType, DataTypes, Symbol};
 
 mod try_into;
 

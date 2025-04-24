@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
 use std::ops::RangeInclusive;
-use std::str::FromStr;
 
 use super::{beckhoff, result};
+
+mod array;
 
 #[derive(Clone, Debug, Default)]
 pub struct SymbolsAndDataTypes {
@@ -42,7 +43,7 @@ impl SymbolsAndDataTypes {
     ) -> Result<(&Symbol, &DataType)> {
         let symbol = self.get_symbol(value_name)?;
 
-        let n_array_accessings = count_array_accessors(value_name);
+        let n_array_accessings = array::count_accessors(value_name);
         let data_type_info = if n_array_accessings > 0 {
             self.data_types
                 .symbol_get_base_type(symbol, Some(n_array_accessings))?
@@ -72,7 +73,7 @@ impl SymbolsAndDataTypes {
             }
             [one] => one.to_string(),
             [one, two, ..] => {
-                let two_base = str_trim_array_accessor(two);
+                let two_base = array::trim_accessors(two);
                 format!("{one}.{two_base}")
             }
         };
@@ -88,7 +89,7 @@ impl SymbolsAndDataTypes {
         };
 
         for token in &tokens[2..] {
-            let token_base = str_trim_array_accessor(token);
+            let token_base = array::trim_accessors(token);
             let parent_data_type = self.data_types.symbol_get_base_type(symbol_entry, None)?;
             let mut found = false;
             for field in &parent_data_type.fields {
@@ -144,27 +145,7 @@ impl DataTypes {
 }
 
 fn data_type_get_base_name(data_type: &str, n_array_accessings: Option<u8>) -> Result<&str> {
-    let base_name = match n_array_accessings {
-        Some(n) => {
-            let mut remainder = data_type;
-            for _ in 0..n {
-                match remainder.find(" OF ") {
-                    Some(start) => remainder = remainder[start + 4..].trim(),
-                    None => {
-                        return Err(Error::new(
-                            ErrorKind::InvalidInput,
-                            "Out-of-bounds error: Too many array accessors!",
-                        ))
-                    }
-                }
-            }
-            remainder
-        }
-        None => match data_type.rfind(" OF ") {
-            Some(start) => data_type[start + 4..].trim(),
-            None => data_type,
-        },
-    };
+    let base_name = array::get_base_name(data_type, n_array_accessings)?;
 
     let base_name = match base_name.rfind(" TO ") {
         Some(start) => base_name[start + 4..].trim(),
@@ -381,7 +362,7 @@ impl DataType {
 
         let comment = bytes_get_comment(&bytes[comment_start..comment_end])?;
 
-        let array_ranges = name_get_array_ranges(&name).unwrap_or_default();
+        let array_ranges = array::get_ranges(&name).unwrap_or_default();
 
         let mut fields = Vec::new();
         let mut field_this_start = field_info_start;
@@ -432,101 +413,4 @@ fn bytes_get_string(bytes: &[u8]) -> Result<String> {
             format!("Cannot parse {bytes:?}"),
         ))
     }
-}
-
-fn count_array_accessors(input: &str) -> u8 {
-    let mut output = 0;
-
-    for c in input.chars().rev() {
-        if c == ']' {
-            output += 1;
-        } else if c == '.' {
-            break;
-        }
-    }
-
-    output
-}
-
-fn name_get_array_ranges(input: &str) -> Result<Vec<RangeInclusive<i32>>> {
-    let mut output = Vec::new();
-
-    let mut remainder = input;
-
-    while remainder.contains("ARRAY") {
-        let square_start = match remainder.find('[') {
-            Some(i) => i,
-            None => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Cannot parse array dimensions: Cannot find '[' in {input}"),
-                ))
-            }
-        };
-        let square_end = match remainder.find(']') {
-            Some(i) => i,
-            None => {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Cannot parse array dimensions: Cannot find ']' in {input}"),
-                ))
-            }
-        };
-
-        if square_start > square_end {
-            return Err(Error::new(
-                ErrorKind::InvalidData,
-                format!("Cannot parse array dimensions: '[' comes after ']' in {input}"),
-            ));
-        }
-
-        let dimensions = remainder[square_start + 1..square_end]
-            .split(',')
-            .collect::<Vec<&str>>();
-
-        for dimension in dimensions {
-            let mid = match dimension.find("..") {
-                Some(i) => i,
-                None => {
-                    return Err(Error::new(
-                        ErrorKind::InvalidData,
-                        format!("Cannot parse array dimensions: Cannot find \"..\" in {input}"),
-                    ))
-                }
-            };
-            let start_str = &dimension[..mid];
-            let end_str = &dimension[mid + 2..];
-            let start = match i32::from_str(start_str) {
-                Ok(x) => x,
-                Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid start dimension {start_str} ({e})"))),
-            };
-            let end = match i32::from_str(end_str) {
-                Ok(x) => x,
-                Err(e) => return Err(Error::new(ErrorKind::InvalidData, format!("Cannot parse array dimensions: {input} contains invalid end dimension {end_str} ({e})"))),
-            };
-
-            if start > end {
-                return Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("Invalid array dimensions: {start} > {end} in {input}"),
-                ));
-            }
-
-            output.push(RangeInclusive::new(start, end));
-        }
-
-        remainder = &remainder[square_end + 1..];
-    }
-
-    Ok(output)
-}
-
-fn str_trim_array_accessor(input: &str) -> String {
-    let mut output = input.to_string();
-    if let Some(index) = output.find("[") {
-        while output.len() > index {
-            output.pop();
-        }
-    }
-    output
 }

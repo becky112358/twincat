@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use super::{beckhoff, symbols};
+use super::{beckhoff, symbols_and_data_types};
 
 pub struct ClientBuilder {
     ams_address: beckhoff::AmsAddr,
@@ -21,7 +21,7 @@ impl ClientBuilder {
         unsafe { beckhoff::AdsPortOpen() };
         let port = unsafe { beckhoff::AdsPortOpenEx() };
 
-        let symbols_and_data_types = match symbols::upload(&self.ams_address, port) {
+        let symbols_and_data_types = match symbols_and_data_types::upload(&self.ams_address, port) {
             Ok(s) => s,
             Err(e) => {
                 unsafe { beckhoff::AdsPortCloseEx(port) };
@@ -42,7 +42,7 @@ impl ClientBuilder {
 pub struct Client {
     ams_address: beckhoff::AmsAddr,
     port: i32,
-    symbols_and_data_types: symbols::SymbolsAndDataTypes,
+    symbols_and_data_types: symbols_and_data_types::SymbolsAndDataTypes,
 }
 
 impl Drop for Client {
@@ -66,7 +66,7 @@ impl Client {
     pub(super) fn port(&self) -> i32 {
         self.port
     }
-    pub fn symbols_and_data_types(&self) -> &symbols::SymbolsAndDataTypes {
+    pub fn symbols_and_data_types(&self) -> &symbols_and_data_types::SymbolsAndDataTypes {
         &self.symbols_and_data_types
     }
 }

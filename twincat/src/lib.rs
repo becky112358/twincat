@@ -5,7 +5,7 @@ mod result;
 mod rx;
 mod state;
 pub use state::State;
-mod symbols;
+mod symbols_and_data_types;
 mod tx;
 mod variables;
 pub use variables::{StartIndex, Variable};
