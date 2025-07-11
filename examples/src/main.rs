@@ -31,6 +31,15 @@ fn main() -> Result<()> {
 
     persistent::persistent(&client)?;
 
+    assert!(client
+        .set_value("MAIN.kitchen.name", V::String(String::from("0123456789")))
+        .is_ok());
+    assert!(client.set_value("MAIN.kitchen.name", V::String(String::from("\
+        0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\
+        0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\
+        012345678901234567890123456789012345678901234567890123456789"
+    ))).is_err());
+
     verify_heating(&client)?;
 
     Ok(())

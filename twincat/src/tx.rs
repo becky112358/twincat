@@ -1,4 +1,4 @@
-use std::io::Result;
+use std::io::{Error, ErrorKind, Result};
 
 use super::client::Client;
 use super::variables::{self, Variable};
@@ -50,6 +50,18 @@ impl Client {
                 std::ptr::null_mut(),
             )
         })?;
+
+        let symbol_entry_size = symbol_entry.size;
+        if bytes.len() > symbol_entry_size as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!(
+                    "{value_name} has size {}, cannot write {} bytes",
+                    symbol_entry_size,
+                    bytes.len()
+                ),
+            ));
+        }
 
         result::process(unsafe {
             beckhoff::AdsSyncWriteReqEx(
