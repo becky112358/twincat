@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.13">
   <DUT Name="Fridge" Id="{b7379810-920a-438c-89f1-2560272f9146}">
     <Declaration><![CDATA[TYPE Fridge :
 STRUCT

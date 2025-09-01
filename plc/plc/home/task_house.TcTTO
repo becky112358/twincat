@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.12">
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.13">
   <Task Name="task_house" Id="{fe10899b-9a6d-4462-8643-e74d0befe553}">
     <!--CycleTime in micro seconds.-->
     <CycleTime>10000</CycleTime>
