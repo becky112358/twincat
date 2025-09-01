@@ -6,7 +6,7 @@
 
 ### Example
 ```
-use std::io::Result;
+use std::io::{Error, Result};
 
 use twincat::{path_verify, Client, State};
 
@@ -25,10 +25,7 @@ fn main() -> Result<()> {
 fn get_room_luminosity(client: &Client, room: &str) -> Result<u16> {
     match client.get_value(format!("main.{room}.actual_luminosity_lumens"))? {
         V::U16(inner) => Ok(inner),
-        x => Err(Error::new(
-            ErrorKind::Other,
-            format!("Unexpected variable type {x:?}"),
-        )),
+        x => Err(Error::other(format!("Unexpected variable type {x:?}"))),
     }
 }
 

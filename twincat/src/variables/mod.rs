@@ -379,7 +379,7 @@ fn bytes_to_string(bytes: &[u8]) -> Result<String> {
 
     match String::from_utf8(bytes[..end_index].to_vec()) {
         Ok(s) => Ok(s),
-        Err(err) => Err(Error::new(ErrorKind::Other, err.to_string())),
+        Err(err) => Err(Error::other(err.to_string())),
     }
 }
 

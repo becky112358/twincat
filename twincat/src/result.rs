@@ -1,4 +1,4 @@
-use std::io::{Error, ErrorKind, Result};
+use std::io::{Error, Result};
 
 use super::beckhoff;
 
@@ -153,8 +153,5 @@ pub fn process(code: i32) -> Result<()> {
 }
 
 fn error(code: i32, text: &str) -> Result<()> {
-    Err(Error::new(
-        ErrorKind::Other,
-        format!("Error code {code:#06x} : {text}"),
-    ))
+    Err(Error::other(format!("Error code {code:#06x} : {text}")))
 }
