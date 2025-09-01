@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.13">
-  <POU Name="kitchen" Id="{0498317b-10e2-4981-ab18-8a40fbcd9ccb}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK kitchen EXTENDS room
+  <POU Name="Kitchen" Id="{0498317b-10e2-4981-ab18-8a40fbcd9ccb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Kitchen EXTENDS Room
 VAR_INPUT
     n_broccolis : USINT := 0;
 END_VAR

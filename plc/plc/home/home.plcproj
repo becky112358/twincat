@@ -27,26 +27,26 @@
     <Compile Include="garden.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="HOUSE.TcGVL">
+    <Compile Include="house.TcGVL">
       <SubType>Code</SubType>
       <LinkAlways>true</LinkAlways>
     </Compile>
-    <Compile Include="kitchen.TcPOU">
+    <Compile Include="Kitchen.TcPOU">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="MAIN.TcPOU">
+    <Compile Include="main.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Plant.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Room.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="task_garden.TcTTO">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="task_house.TcTTO">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="room.TcPOU">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>

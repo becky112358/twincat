@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.13">
-  <POU Name="room" Id="{ae2b00df-2148-488f-9787-a38fc4dad82f}" SpecialFunc="None">
-    <Declaration><![CDATA[FUNCTION_BLOCK room
+  <POU Name="Room" Id="{ae2b00df-2148-488f-9787-a38fc4dad82f}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK Room
 VAR_INPUT
     target_luminosity_lumens : UINT := 1000;
     target_temperature_oc    : REAL := 18.5;
