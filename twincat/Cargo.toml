@@ -9,10 +9,10 @@ readme = "readme.md"
 repository = "https://github.com/becky112358/twincat"
 
 [build-dependencies]
-bindgen = "0.71.1"
+bindgen = "0.72.1"
 
 [dependencies]
-strum = "0.27.1"
-strum_macros = "0.27.1"
+strum = "0.27.2"
+strum_macros = "0.27.2"
 twincat_derive = { path = "../twincat_derive", version = "0.1.0" }
-zerocopy = "0.8.24"
+zerocopy = "0.8.26"
