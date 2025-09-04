@@ -169,7 +169,9 @@ impl Variable {
         let mut elements = Vec::new();
         for field in symbol_data_type.fields() {
             let field_data_type_name = field.data_type().trim();
-            if field_data_type_name.contains("REFERENCE") {
+            if field_data_type_name.contains("REFERENCE")
+                || field_data_type_name.starts_with("Tc3_EventLogger.")
+            {
                 continue;
             }
             let field_data_type = data_types.get(field_data_type_name)?;
