@@ -1,10 +1,13 @@
 use std::ops::RangeInclusive;
 
-use super::{DataType, SymbolsAndDataTypes};
+use super::{DataType, Symbol, SymbolsAndDataTypes};
 
 impl SymbolsAndDataTypes {
     pub fn persistent(&self) -> Vec<String> {
         let mut output = Vec::new();
+        let filter = Filter {
+            filter: &|symbol| symbol.persistent,
+        };
         for symbol in self.symbols.0.iter() {
             if symbol.1.persistent {
                 output.push(symbol.0.to_string());
@@ -14,7 +17,7 @@ impl SymbolsAndDataTypes {
                 } else {
                     continue;
                 };
-                let persistents = self.persistent_inner(data_type);
+                let persistents = self.recurse(&filter, data_type);
                 for p0 in persistents {
                     output.extend(p0.to_strings(symbol.0.to_string()));
                 }
@@ -23,7 +26,30 @@ impl SymbolsAndDataTypes {
         output
     }
 
-    fn persistent_inner(&self, data_type: &DataType) -> Vec<Field> {
+    pub fn symbols_with_data_type_name(&self, data_type_name: &str) -> Vec<String> {
+        let mut output = Vec::new();
+        let filter = Filter {
+            filter: &|symbol| symbol.data_type_name == data_type_name,
+        };
+        for symbol in self.symbols.0.iter() {
+            if symbol.1.data_type_name == data_type_name {
+                output.push(symbol.0.to_string());
+            } else {
+                let data_type = if let Some(dt) = self.data_types.0.get(&symbol.1.data_type_name) {
+                    dt
+                } else {
+                    continue;
+                };
+                let symbols = self.recurse(&filter, data_type);
+                for s0 in symbols {
+                    output.extend(s0.to_strings(symbol.0.to_string()));
+                }
+            }
+        }
+        output
+    }
+
+    fn recurse(&self, filter: &Filter, data_type: &DataType) -> Vec<Field> {
         let mut output = Vec::new();
         if let Some(array_range) = data_type.array_ranges.first() {
             let parent_name =
@@ -39,17 +65,17 @@ impl SymbolsAndDataTypes {
                 return output;
             };
             output.extend(
-                self.persistent_inner(parent_data_type)
+                self.recurse(filter, parent_data_type)
                     .iter()
                     .map(|p| Field::Array(array_range.clone(), Box::new(p.clone()))),
             );
         } else {
             for field in &data_type.fields {
-                if field.persistent {
+                if (filter.filter)(field) {
                     output.push(Field::End(field.name.to_string()));
                 } else if let Ok(child_data_type) = self.data_types.get(&field.data_type_name) {
                     output.extend(
-                        self.persistent_inner(child_data_type)
+                        self.recurse(filter, child_data_type)
                             .iter()
                             .map(|p| Field::Flat(field.name.to_string(), Box::new(p.clone()))),
                     );
@@ -60,8 +86,14 @@ impl SymbolsAndDataTypes {
     }
 }
 
+struct Filter<'a> {
+    filter: &'a dyn Fn(&Symbol) -> bool,
+}
+
 #[derive(Clone, Debug)]
 enum Field {
+    // TcUnit has some very big arrays!
+    // To cope with this, just look at the first member of each array, and propogate the results.
     Array(RangeInclusive<i32>, Box<Field>),
     Flat(String, Box<Field>),
     End(String),

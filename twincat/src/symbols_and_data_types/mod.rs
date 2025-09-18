@@ -5,7 +5,7 @@ use std::ops::RangeInclusive;
 use super::{beckhoff, result};
 
 mod array;
-mod persistent;
+mod filters;
 
 #[derive(Clone, Debug, Default)]
 pub struct SymbolsAndDataTypes {
