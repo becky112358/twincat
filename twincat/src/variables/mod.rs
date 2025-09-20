@@ -196,12 +196,18 @@ impl Variable {
         Ok(Self::Struct(elements))
     }
 
-    pub(super) fn to_bytes(&self, symbol: &Symbol, symbol_data_type: &DataType) -> Result<Vec<u8>> {
-        self.to_bytes_inner(symbol, symbol_data_type.array_ranges())
+    pub(super) fn to_bytes(
+        &self,
+        data_types: &DataTypes,
+        symbol: &Symbol,
+        symbol_data_type: &DataType,
+    ) -> Result<Vec<u8>> {
+        self.to_bytes_inner(data_types, symbol, symbol_data_type.array_ranges())
     }
 
     pub(super) fn to_bytes_inner(
         &self,
+        data_types: &DataTypes,
         symbol: &Symbol,
         array_ranges: &[RangeInclusive<i32>],
     ) -> Result<Vec<u8>> {
@@ -223,12 +229,9 @@ impl Variable {
             (Self::F64(inner), 5) => Ok(inner.as_bytes().to_vec()),
             (Self::String(inner), 30) => Ok(str_to_bytes(inner)),
             (Self::Array(start_index, array_inner), _) => {
-                array_to_bytes(symbol, start_index, array_inner, array_ranges)
+                array_to_bytes(data_types, symbol, start_index, array_inner, array_ranges)
             }
-            (Self::Struct(_), 65) => Err(Error::new(
-                ErrorKind::Unsupported,
-                "Writing structs is not supported",
-            )),
+            (Self::Struct(inner), 65) => struct_to_bytes(data_types, symbol, inner),
             _ => Err(Error::new(
                 ErrorKind::InvalidInput,
                 format!("Unexpected data type; expected {symbol:?}, got {self:?}"),
@@ -238,6 +241,7 @@ impl Variable {
 }
 
 fn array_to_bytes(
+    data_types: &DataTypes,
     symbol: &Symbol,
     start_index: &StartIndex,
     array_content: &[Variable],
@@ -267,13 +271,14 @@ fn array_to_bytes(
             let mut output = Vec::new();
             if array_ranges.len() == 1 {
                 for inner in array_content {
-                    output.append(&mut inner.to_bytes_inner(symbol, &[])?);
+                    output.append(&mut inner.to_bytes_inner(data_types, symbol, &[])?);
                 }
                 Ok(output)
             } else {
                 for inner_array in array_content {
                     if let Variable::Array(inner_start_index, inner) = inner_array {
                         output.append(&mut array_to_bytes(
+                            data_types,
                             symbol,
                             inner_start_index,
                             inner,
@@ -290,6 +295,72 @@ fn array_to_bytes(
             }
         }
     }
+}
+
+fn struct_to_bytes(
+    data_types: &DataTypes,
+    symbol: &Symbol,
+    fields: &[(String, Variable)],
+) -> Result<Vec<u8>> {
+    for i in 0..fields.len() {
+        for j in i + 1..fields.len() {
+            if fields[i].0 == fields[j].0 {
+                return Err(Error::new(
+                    ErrorKind::InvalidInput,
+                    format!("Struct field {} is set multiple times", fields[i].0),
+                ));
+            }
+        }
+    }
+
+    let mut some_bytes = Vec::new();
+
+    for field in fields {
+        let mut field_symbol = None;
+        for symbol_field in data_types.get(symbol.data_type())?.fields() {
+            if symbol_field.name() == field.0 {
+                field_symbol = Some(symbol_field);
+                break;
+            }
+        }
+        let field_symbol = if let Some(fs) = field_symbol {
+            fs
+        } else {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                format!("Cannot find struct field {}", field.0),
+            ));
+        };
+
+        let field_bytes = field.1.to_bytes(
+            data_types,
+            field_symbol,
+            data_types.get(field_symbol.data_type())?,
+        )?;
+
+        if field_symbol.offset() < some_bytes.len() {
+            for i in 0..field_bytes.len() {
+                if field_symbol.offset() + i < some_bytes.len() {
+                    some_bytes[field_symbol.offset() + i] = Some(field_bytes[i]);
+                } else {
+                    some_bytes.push(Some(field_bytes[i]));
+                }
+            }
+        } else {
+            some_bytes.extend(vec![None; field_symbol.offset() - some_bytes.len()]);
+            some_bytes.extend(
+                field_bytes
+                    .iter()
+                    .map(|&b| Some(b))
+                    .collect::<Vec<Option<u8>>>(),
+            );
+        }
+    }
+
+    some_bytes.iter().map(|bx| match bx {
+        Some(b) => Ok(*b),
+        None => Err(Error::new(ErrorKind::Unsupported, format!("Cannot write {} as a single struct because the bytes have gaps; write the fields individually", symbol.name()))),
+    }).collect()
 }
 
 pub(super) fn str_and_symbol_to_bytes(value: &str, symbol: &Symbol) -> Result<Vec<u8>> {
