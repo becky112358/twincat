@@ -1,38 +1,53 @@
 use std::ops::RangeInclusive;
 
-use super::{DataType, Symbol, SymbolsAndDataTypes};
+use super::{DataType, Group, Symbol, SymbolsAndDataTypes};
 
 impl SymbolsAndDataTypes {
+    pub fn inputs(&self) -> Vec<String> {
+        self.symbols
+            .0
+            .iter()
+            .filter(|s| matches!(s.1.group, Group::Input))
+            .map(|s| s.0.to_string())
+            .collect()
+    }
+
+    pub fn outputs(&self) -> Vec<String> {
+        self.symbols
+            .0
+            .iter()
+            .filter(|s| matches!(s.1.group, Group::Output))
+            .map(|s| s.0.to_string())
+            .collect()
+    }
+
+    pub fn flags(&self) -> Vec<String> {
+        self.symbols
+            .0
+            .iter()
+            .filter(|s| matches!(s.1.group, Group::Flag))
+            .map(|s| s.0.to_string())
+            .collect()
+    }
+
     pub fn persistent(&self) -> Vec<String> {
-        let mut output = Vec::new();
         let filter = Filter {
             filter: &|symbol| symbol.persistent,
         };
-        for symbol in self.symbols.0.iter() {
-            if symbol.1.persistent {
-                output.push(symbol.0.to_string());
-            } else {
-                let data_type = if let Some(dt) = self.data_types.0.get(&symbol.1.data_type_name) {
-                    dt
-                } else {
-                    continue;
-                };
-                let persistents = self.recurse(&filter, data_type);
-                for p0 in persistents {
-                    output.extend(p0.to_strings(symbol.0.to_string()));
-                }
-            }
-        }
-        output
+        self.apply_filter(&filter)
     }
 
     pub fn symbols_with_data_type_name(&self, data_type_name: &str) -> Vec<String> {
-        let mut output = Vec::new();
         let filter = Filter {
             filter: &|symbol| symbol.data_type_name == data_type_name,
         };
+        self.apply_filter(&filter)
+    }
+
+    fn apply_filter(&self, filter: &Filter) -> Vec<String> {
+        let mut output = Vec::new();
         for symbol in self.symbols.0.iter() {
-            if symbol.1.data_type_name == data_type_name {
+            if (filter.filter)(symbol.1) {
                 output.push(symbol.0.to_string());
             } else {
                 let data_type = if let Some(dt) = self.data_types.0.get(&symbol.1.data_type_name) {
@@ -40,7 +55,7 @@ impl SymbolsAndDataTypes {
                 } else {
                     continue;
                 };
-                let symbols = self.recurse(&filter, data_type);
+                let symbols = self.recurse(filter, data_type);
                 for s0 in symbols {
                     output.extend(s0.to_strings(symbol.0.to_string()));
                 }
@@ -92,8 +107,7 @@ struct Filter<'a> {
 
 #[derive(Clone, Debug)]
 enum Field {
-    // TcUnit has some very big arrays!
-    // To cope with this, just look at the first member of each array, and propogate the results.
+    // To cope with very big arrays, just look at the first member of each array, and propogate the results.
     Array(RangeInclusive<i32>, Box<Field>),
     Flat(String, Box<Field>),
     End(String),

@@ -3,6 +3,7 @@
 - Get & Set the ADS state
 - Get & Set variable values
 - Get all `PERSISTENT` variables
+- Get all input (`%I*`), output (`%Q*`) and flag (`%M*`) variables
 
 ### Example
 ```

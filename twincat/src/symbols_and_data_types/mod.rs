@@ -25,8 +25,18 @@ pub struct Symbol {
     data_type_id: u8,
     data_type_name: String,
     offset: usize,
+    group: Group,
     persistent: bool,
     _comment: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+enum Group {
+    Input,  // %I*
+    Output, // %Q*
+    Flag,   // %M*
+    None,
+    StructField,
 }
 
 #[derive(Clone, Debug)]
@@ -295,6 +305,7 @@ impl Symbol {
                 name: bytes_get_string(&bytes[name_start..name_end])?,
                 data_type_id: entry.dataType as u8,
                 data_type_name,
+                group: Group::from_u32(entry.iGroup),
                 offset: entry.iOffs as usize,
                 persistent: entry.flags & beckhoff::ADSSYMBOLFLAG_PERSISTENT
                     == beckhoff::ADSSYMBOLFLAG_PERSISTENT,
@@ -326,6 +337,7 @@ impl Symbol {
                 data_type_id: entry.dataType as u8,
                 data_type_name,
                 offset: entry.offs as usize,
+                group: Group::StructField,
                 persistent: (entry.flags >> 8) & beckhoff::ADSSYMBOLFLAG_PERSISTENT
                     == beckhoff::ADSSYMBOLFLAG_PERSISTENT,
                 _comment: comment,
@@ -345,6 +357,23 @@ impl Symbol {
     }
     pub(super) fn offset(&self) -> usize {
         self.offset
+    }
+}
+
+impl Group {
+    fn from_u32(input: u32) -> Self {
+        match input {
+            61472 => Self::Input,
+            61488 => Self::Output,
+            16416 => Self::Flag,
+            16448 => Self::None,
+            _ => {
+                if cfg!(debug_assertions) {
+                    println!("Unrecognised group {input}");
+                }
+                Self::None
+            }
+        }
     }
 }
 
