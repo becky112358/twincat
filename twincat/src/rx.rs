@@ -1,4 +1,4 @@
-use std::io::Result;
+use std::io::{Error, Result};
 
 use super::client::Client;
 use super::variables::Variable;
@@ -15,12 +15,13 @@ impl Client {
     }
 
     fn get_raw_bytes(&self, value_name: &str, symbol_size_bytes: usize) -> Result<Vec<u8>> {
-        const SIZE_U32: u32 = std::mem::size_of::<u32>() as u32;
+        const SIZE_SYMBOL_ENTRY: u32 = std::mem::size_of::<beckhoff::AdsSymbolEntry>() as u32;
 
         let ptr_address = &mut self.ams_address().to_owned() as *mut beckhoff::AmsAddr;
 
-        let mut handle = 0;
-        let ptr_handle = &mut handle as *mut u32 as *mut std::os::raw::c_void;
+        let mut symbol_entry = beckhoff::AdsSymbolEntry::default();
+        let ptr_symbol_entry =
+            &mut symbol_entry as *mut beckhoff::AdsSymbolEntry as *mut std::os::raw::c_void;
 
         let ptr_name = value_name as *const str as *mut std::os::raw::c_void;
 
@@ -28,10 +29,10 @@ impl Client {
             beckhoff::AdsSyncReadWriteReqEx2(
                 self.port(),
                 ptr_address,
-                beckhoff::ADSIGRP_SYM_HNDBYNAME,
+                beckhoff::ADSIGRP_SYM_INFOBYNAMEEX,
                 0,
-                SIZE_U32,
-                ptr_handle,
+                SIZE_SYMBOL_ENTRY,
+                ptr_symbol_entry,
                 value_name.len() as u32,
                 ptr_name,
                 std::ptr::null_mut(),
@@ -41,28 +42,26 @@ impl Client {
         let mut buffer = vec![0; symbol_size_bytes];
         let ptr_buffer = buffer.as_mut_ptr() as *mut std::os::raw::c_void;
 
+        let mut n_bytes_read = 0_u32;
+        let ptr_n_bytes_read = &mut n_bytes_read as *mut u32;
+
         result::process(unsafe {
             beckhoff::AdsSyncReadReqEx2(
                 self.port(),
                 ptr_address,
-                beckhoff::ADSIGRP_SYM_VALBYHND,
-                handle,
+                symbol_entry.iGroup,
+                symbol_entry.iOffs,
                 symbol_size_bytes as u32,
                 ptr_buffer,
-                std::ptr::null_mut(),
+                ptr_n_bytes_read,
             )
         })?;
 
-        result::process(unsafe {
-            beckhoff::AdsSyncWriteReqEx(
-                self.port(),
-                ptr_address,
-                beckhoff::ADSIGRP_SYM_RELEASEHND,
-                0,
-                SIZE_U32,
-                ptr_handle,
-            )
-        })?;
+        if cfg!(debug_assertions) && n_bytes_read as usize != symbol_size_bytes {
+            return Err(Error::other(format!(
+                "Expected to read {symbol_size_bytes} bytes, read {n_bytes_read} bytes"
+            )));
+        }
 
         Ok(buffer)
     }

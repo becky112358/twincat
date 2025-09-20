@@ -32,9 +32,6 @@ impl Client {
         let ptr_symbol_entry =
             &mut symbol_entry as *mut beckhoff::AdsSymbolEntry as *mut std::os::raw::c_void;
 
-        let mut bytes = bytes;
-        let ptr_bytes = bytes.as_mut_ptr() as *mut std::os::raw::c_void;
-
         let ptr_name = value_name as *const str as *mut std::os::raw::c_void;
 
         result::process(unsafe {
@@ -50,6 +47,9 @@ impl Client {
                 std::ptr::null_mut(),
             )
         })?;
+
+        let mut bytes = bytes;
+        let ptr_bytes = bytes.as_mut_ptr() as *mut std::os::raw::c_void;
 
         let symbol_entry_size = symbol_entry.size;
         if bytes.len() > symbol_entry_size as usize {
