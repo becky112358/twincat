@@ -50,6 +50,24 @@ pub fn arrays(client: &Client) -> Result<()> {
         turnips,
         client.get_value("garden.vegetable_plot_at_front[1][0]")?
     );
+    client.set_value_from_str("garden.vegetable_plot_at_front[1][0]", "[2,1,0,1,2,3,4,5]")?;
+    assert_eq!(
+        turnips,
+        client.get_value("garden.vegetable_plot_at_front[1][0]")?
+    );
+
+    client.set_value_from_str(
+        "garden.vegetable_plot_at_front[1]",
+        "[[5,5,4,4,3,3,2,2],[0,1,2,5,4,3,2,1],[0,0,1,1,2,2,3,3]]",
+    )?;
+    assert_eq!(
+        client.get_value("garden.vegetable_plot_at_front[1][0][2]")?,
+        V::I16(4)
+    );
+    assert_eq!(
+        client.get_value("garden.vegetable_plot_at_front[1][1][5]")?,
+        V::I16(3)
+    );
 
     assert!(client
         .set_value(

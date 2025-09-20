@@ -6,6 +6,8 @@ use zerocopy::{FromBytes, IntoBytes};
 
 use crate::symbols_and_data_types::{DataType, DataTypes, Symbol};
 
+mod array;
+use array::str_array_split;
 mod try_into;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -363,7 +365,38 @@ fn struct_to_bytes(
     }).collect()
 }
 
-pub(super) fn str_and_symbol_to_bytes(value: &str, symbol: &Symbol) -> Result<Vec<u8>> {
+pub(super) fn str_and_symbol_to_bytes(
+    value: &str,
+    symbol: &Symbol,
+    symbol_data_type: &DataType,
+) -> Result<Vec<u8>> {
+    str_and_symbol_to_bytes_inner(value, symbol, symbol_data_type.array_ranges())
+}
+
+fn str_and_symbol_to_bytes_inner(
+    value: &str,
+    symbol: &Symbol,
+    array_ranges: &[RangeInclusive<i32>],
+) -> Result<Vec<u8>> {
+    match array_ranges.first() {
+        None => str_and_symbol_to_bytes_flat(value, symbol),
+        Some(array_range) => {
+            let array_length = 1 + *array_range.end() - *array_range.start();
+            let values = str_array_split(value)?;
+            if values.len() as i32 != array_length {
+                return Err(Error::new(ErrorKind::InvalidInput, format!("Expected an array of length {array_length}, got {value} which is of length {}", values.len())));
+            }
+            let mut bytes = Vec::new();
+            for v in str_array_split(value)? {
+                let chunk = str_and_symbol_to_bytes_inner(&v, symbol, &array_ranges[1..])?;
+                bytes.extend(chunk);
+            }
+            Ok(bytes)
+        }
+    }
+}
+
+fn str_and_symbol_to_bytes_flat(value: &str, symbol: &Symbol) -> Result<Vec<u8>> {
     match symbol.data_type_id() {
         0 => {
             if value.is_empty() {
