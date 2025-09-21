@@ -12,7 +12,11 @@ repository = "https://github.com/becky112358/twincat"
 bindgen = "0.72.1"
 
 [dependencies]
+lazy_static = { version = "1.5.0", optional = true }
 strum = "0.27.2"
 strum_macros = "0.27.2"
 twincat_derive = { path = "../twincat_derive", version = "0.1.0" }
 zerocopy = "0.8.26"
+
+[features]
+notifications = ["lazy_static"]

@@ -4,12 +4,13 @@
 - Get & Set variable values
 - Get all `PERSISTENT` variables
 - Get all input (`%I*`), output (`%Q*`) and flag (`%M*`) variables
+- Request notifications for variable changes
 
 ### Example
 ```
 use std::io::{Error, Result};
 
-use twincat::{path_verify, Client, State};
+use twincat::{path_verify, Client, State, Variable as V};
 
 fn main() -> Result<()> {
     let client = Client::builder::connect()?;

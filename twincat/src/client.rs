@@ -47,6 +47,9 @@ pub struct Client {
 
 impl Drop for Client {
     fn drop(&mut self) {
+        #[cfg(feature = "notifications")]
+        let _ = self.drop_notification_requests();
+
         unsafe { beckhoff::AdsPortCloseEx(self.port) };
         unsafe { beckhoff::AdsPortClose() };
     }

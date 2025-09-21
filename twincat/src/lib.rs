@@ -1,6 +1,10 @@
 mod beckhoff;
 mod client;
 pub use client::Client;
+#[cfg(feature = "notifications")]
+mod notifications;
+#[cfg(feature = "notifications")]
+pub use notifications::{AdsTransmissionMode, Time};
 mod result;
 mod rx;
 mod state;

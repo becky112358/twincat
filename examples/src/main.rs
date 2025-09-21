@@ -6,6 +6,7 @@ use twincat::{path_verify, Client, State, Variable as V};
 
 mod arrays;
 mod complex_types;
+mod notifications;
 mod persistent;
 
 fn main() -> Result<()> {
@@ -39,6 +40,8 @@ fn main() -> Result<()> {
         0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789\
         012345678901234567890123456789012345678901234567890123456789"
     ))).is_err());
+
+    notifications::notifications(&client)?;
 
     verify_heating(&client)?;
 

@@ -5,7 +5,7 @@ edition = "2021"
 description = "TwinCAT ADS example usage"
 
 [dependencies]
-twincat = { path = "../twincat" }
+twincat = { path = "../twincat", features = ["notifications"] }
 
 [dev-dependencies]
 serial_test = "3.2.0"
