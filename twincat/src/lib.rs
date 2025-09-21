@@ -13,5 +13,6 @@ mod symbols_and_data_types;
 mod tx;
 mod variables;
 pub use variables::{StartIndex, Variable};
+mod verify;
 
 pub use twincat_derive::path_verify;

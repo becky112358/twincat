@@ -5,6 +5,7 @@
 - Get all `PERSISTENT` variables
 - Get all input (`%I*`), output (`%Q*`) and flag (`%M*`) variables
 - Request notifications for variable changes
+- Verify an ADS path and its associated variable
 
 ### Example
 ```

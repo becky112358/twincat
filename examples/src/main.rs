@@ -41,6 +41,21 @@ fn main() -> Result<()> {
         012345678901234567890123456789012345678901234567890123456789"
     ))).is_err());
 
+    assert!(client.verify_ads_path("main.kitchen.name").is_ok());
+    assert!(client.verify_ads_path("main,kitchen,name").is_err());
+    client.set_value_from_str("main.kitchen.name", "Over There")?;
+    assert!(client
+        .verify_ads_path_and_variable_type("main.kitchen.name", V::String(String::from("Where?")))
+        .is_ok());
+    assert!(client
+        .verify_ads_path_and_str_variable("main.kitchen.name", "There!")
+        .is_ok());
+    assert!(client
+        .verify_ads_path_and_variable_type("main.kitchen.name", V::U8(2))
+        .is_err());
+    let kitchen_name: String = client.get_value("main.kitchen.name")?.try_into()?;
+    assert_eq!(kitchen_name, "Over There");
+
     notifications::notifications(&client)?;
 
     verify_heating(&client)?;
